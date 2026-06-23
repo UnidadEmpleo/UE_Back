@@ -1,0 +1,12 @@
+[
+    {
+        "name": "Dashboard",
+        "icon": "nc-icon nc-chart-pie-35",
+        "link": "/admin/overview"
+    },
+    {
+        "name": "Components",
+        "icon": "nc-icon nc-app",
+        "link": "/icons"        
+    }
+]

@@ -1,0 +1,80 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <GenerateDocumentationFile>True</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Seguridad\Domain\RH\**" />
+    <Content Remove="Seguridad\Domain\RH\**" />
+    <EmbeddedResource Remove="Seguridad\Domain\RH\**" />
+    <None Remove="Seguridad\Domain\RH\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Seguridad\Application\Seguridad\Grupos\Queries\GetGrupoDetails.cs" />
+    <Compile Remove="Seguridad\Application\Seguridad\Grupos\Queries\GetGrupoList.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper" Version="14.0.0" />
+    <PackageReference Include="CsvHelper" Version="33.1.0" />
+    <PackageReference Include="EPPlus" Version="8.2.1" />
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />
+    <PackageReference Include="MediatR" Version="12.4.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="9.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.4" />
+    <PackageReference Include="Microsoft.AspNetCore.SpaServices.Extensions" Version="9.0.4" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.2" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.4">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Graph" Version="5.77.0" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="3.8.3" />
+    <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="3.2.2" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="3.2.2" />
+    <PackageReference Include="nClam" Version="9.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="QRCoder" Version="1.6.0" />
+    <PackageReference Include="QuestPDF" Version="2025.7.3" />
+    <PackageReference Include="Serilog.AspNetCore" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+    <PackageReference Include="Serilog.Sinks.MSSqlServer" Version="8.2.0" />
+    <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
+    <PackageReference Include="Serilog.Sinks.SQLite" Version="6.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="8.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Assets\Images\Aux_300.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Images\CUSAEM_300.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Images\Ler_300.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="Assets\Images\Lom_300.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Migrations\" />
+    <Folder Include="Migrations\UnidadEmpleoDb\" />
+  </ItemGroup>
+
+</Project>

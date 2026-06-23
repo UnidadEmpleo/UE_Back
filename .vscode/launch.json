@@ -1,0 +1,26 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "coreclr",
+      "request": "launch",
+      "name": "Launch API",
+      "program": "${workspaceFolder}/API/bin/Debug/net9.0/${input:executableName}.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/API",
+      "stopAtEntry": false,
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "preLaunchTask": "build API"
+    }
+  ],
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "executableName",
+      "description": "Enter the name of the executable (default is API)"
+    }
+  ]
+}
