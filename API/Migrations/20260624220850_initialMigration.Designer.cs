@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace API.Persistence.Migrations
+namespace API.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250826052619_MantMedicosCalendario")]
-    partial class MantMedicosCalendario
+    [Migration("20260624220850_initialMigration")]
+    partial class initialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,7 +25,51 @@ namespace API.Persistence.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("API.Domain.Audit.AuditLog", b =>
+            modelBuilder.Entity("API.Common.Domain.CodigoPostal", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("c_codigo")
+                        .HasColumnType("int");
+
+                    b.Property<int>("c_estado")
+                        .HasColumnType("int");
+
+                    b.Property<int>("c_mnpio")
+                        .HasColumnType("int");
+
+                    b.Property<int>("c_tipo_asenta")
+                        .HasColumnType("int");
+
+                    b.Property<string>("d_asenta")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("d_estado")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("d_mnpio")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("d_tipo_asenta")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<float>("latitud")
+                        .HasColumnType("real");
+
+                    b.Property<float>("longitud")
+                        .HasColumnType("real");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CodigoPostal");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Audit.AuditLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -61,7 +105,7 @@ namespace API.Persistence.Migrations
                     b.ToTable("AuditLogs");
                 });
 
-            modelBuilder.Entity("API.Domain.Audit.EntityChangeLog", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Audit.EntityChangeLog", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -99,62 +143,7 @@ namespace API.Persistence.Migrations
                     b.ToTable("EntityChangeLogs");
                 });
 
-            modelBuilder.Entity("API.Domain.Clinica.ClinicaMedica", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CorporacionId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("Direccion")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Telefono")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CorporacionId");
-
-                    b.ToTable("ClinicasMedicas");
-                });
-
-            modelBuilder.Entity("API.Domain.Clinica.Especialidad", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Nombre")
-                        .IsRequired()
-                        .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Especialidades");
-                });
-
-            modelBuilder.Entity("API.Domain.LogEntry", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Audit.LogEntry", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -203,7 +192,7 @@ namespace API.Persistence.Migrations
                     b.ToTable("Logs");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.AppIdentityRole", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.AppIdentityRole", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -249,7 +238,7 @@ namespace API.Persistence.Migrations
                     b.ToTable("AspNetRoles", (string)null);
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.AppUserIdentity", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.AppUserIdentity", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -320,19 +309,18 @@ namespace API.Persistence.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Corporacion", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.BaseDatos", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<short>("Id")
+                        .HasColumnType("smallint");
 
                     b.Property<string>("DatabaseName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Descripcion")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Logo")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -343,9 +331,7 @@ namespace API.Persistence.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Port")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("nvarchar(max)")
-                        .HasDefaultValue("1433");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("ServerName")
                         .HasColumnType("nvarchar(max)");
@@ -355,13 +341,85 @@ namespace API.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.ToTable("BasesDatos");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Corporacion", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Logo")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("LogoDerechoReporte")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
                     b.HasIndex("Nombre")
                         .IsUnique();
 
                     b.ToTable("Corporaciones");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Grupo", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.CorporacionSistemaBD", b =>
+                {
+                    b.Property<string>("CorporacionId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<short>("SistemaId")
+                        .HasColumnType("smallint");
+
+                    b.Property<short>("BaseDatosId")
+                        .HasColumnType("smallint");
+
+                    b.HasKey("CorporacionId", "SistemaId", "BaseDatosId");
+
+                    b.HasIndex("BaseDatosId");
+
+                    b.HasIndex("SistemaId");
+
+                    b.ToTable("CorporacionSistemaBDs");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.EstadoCivil", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaUltimaActualizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EstadosCiviles");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Grupo", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -388,7 +446,35 @@ namespace API.Persistence.Migrations
                     b.ToTable("Grupos");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Permiso", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.NivelEducativo", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Descripcion")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaUltimaActualizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("NivelesEducativos");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Permiso", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -421,7 +507,7 @@ namespace API.Persistence.Migrations
                     b.ToTable("Permisos");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Proceso", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Proceso", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -455,6 +541,9 @@ namespace API.Persistence.Migrations
                     b.Property<string>("Ruta")
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<short>("SistemaId")
+                        .HasColumnType("smallint");
+
                     b.Property<string>("Tipo")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -463,10 +552,12 @@ namespace API.Persistence.Migrations
 
                     b.HasIndex("ProcesoPadreId");
 
+                    b.HasIndex("SistemaId");
+
                     b.ToTable("Procesos");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.RolProceso", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.RolProceso", b =>
                 {
                     b.Property<string>("RolId")
                         .HasColumnType("nvarchar(450)");
@@ -487,7 +578,100 @@ namespace API.Persistence.Migrations
                     b.ToTable("RolesProcesos");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Usuario", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Sistema", b =>
+                {
+                    b.Property<short>("Id")
+                        .HasColumnType("smallint");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sistemas");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.TipoRolesNoUtil", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("FechaCreacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("FechaUltimaActualizacion")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("TipoRoles");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.UserRefreshToken", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByIp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Expires")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ReasonRevoked")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ReplacedByTokenHash")
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<DateTime?>("Revoked")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("RevokedByIp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("nvarchar(512)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "TokenHash")
+                        .IsUnique();
+
+                    b.ToTable("UserRefreshTokens");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Usuario", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -504,6 +688,9 @@ namespace API.Persistence.Migrations
 
                     b.Property<string>("Calendario")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("CuerpoId")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("EsUsuarioAD")
@@ -525,6 +712,9 @@ namespace API.Persistence.Migrations
                     b.Property<string>("PrimerApellido")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RegionId")
+                        .HasColumnType("int");
 
                     b.Property<string>("RolId")
                         .HasColumnType("nvarchar(450)");
@@ -551,7 +741,7 @@ namespace API.Persistence.Migrations
                     b.ToTable("Usuarios");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.UsuarioCorporacion", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.UsuarioCorporacion", b =>
                 {
                     b.Property<string>("UsuarioId")
                         .HasColumnType("nvarchar(450)");
@@ -564,6 +754,26 @@ namespace API.Persistence.Migrations
                     b.HasIndex("CorporacionId");
 
                     b.ToTable("UsuarioCorporaciones");
+                });
+
+            modelBuilder.Entity("API.Seguridad.Domain.Ubicacion.EntidadFederativa", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Abreviacion")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EntidadFederativas");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -672,39 +882,63 @@ namespace API.Persistence.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("API.Domain.Clinica.ClinicaMedica", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.CorporacionSistemaBD", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.Corporacion", "Corporacion")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.BaseDatos", "BaseDatos")
+                        .WithMany()
+                        .HasForeignKey("BaseDatosId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Corporacion", "Corporacion")
                         .WithMany()
                         .HasForeignKey("CorporacionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Sistema", "Sistema")
+                        .WithMany()
+                        .HasForeignKey("SistemaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("BaseDatos");
+
                     b.Navigation("Corporacion");
+
+                    b.Navigation("Sistema");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Permiso", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Permiso", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.Proceso", "Proceso")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Proceso", "Proceso")
                         .WithMany()
                         .HasForeignKey("ProcesoId");
 
                     b.Navigation("Proceso");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Proceso", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Proceso", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.Proceso", "ProcesoPadre")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Proceso", "ProcesoPadre")
                         .WithMany("Subprocesos")
                         .HasForeignKey("ProcesoPadreId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Sistema", "Sistema")
+                        .WithMany()
+                        .HasForeignKey("SistemaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("ProcesoPadre");
+
+                    b.Navigation("Sistema");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.RolProceso", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.RolProceso", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.Proceso", "Proceso")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Proceso", "Proceso")
                         .WithMany("Roles")
                         .HasForeignKey("ProcesoId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -713,17 +947,17 @@ namespace API.Persistence.Migrations
                     b.Navigation("Proceso");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Usuario", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Usuario", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.AppUserIdentity", "AppUserIdentity")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppUserIdentity", "AppUserIdentity")
                         .WithOne("Usuario")
-                        .HasForeignKey("API.Domain.Seguridad.Usuario", "AppUserIdentityId");
+                        .HasForeignKey("API.Seguridad.Domain.Seguridad.Usuario", "AppUserIdentityId");
 
-                    b.HasOne("API.Domain.Seguridad.Grupo", null)
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Grupo", null)
                         .WithMany("Usuarios")
                         .HasForeignKey("GrupoId");
 
-                    b.HasOne("API.Domain.Seguridad.AppIdentityRole", "Rol")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppIdentityRole", "Rol")
                         .WithMany()
                         .HasForeignKey("RolId");
 
@@ -732,15 +966,15 @@ namespace API.Persistence.Migrations
                     b.Navigation("Rol");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.UsuarioCorporacion", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.UsuarioCorporacion", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.Corporacion", "Corporacion")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Corporacion", "Corporacion")
                         .WithMany("UsuarioCorporaciones")
                         .HasForeignKey("CorporacionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("API.Domain.Seguridad.Usuario", "Usuario")
+                    b.HasOne("API.Seguridad.Domain.Seguridad.Usuario", "Usuario")
                         .WithMany("UsuarioCorporaciones")
                         .HasForeignKey("UsuarioId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -753,7 +987,7 @@ namespace API.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.AppIdentityRole", null)
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppIdentityRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -762,7 +996,7 @@ namespace API.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.AppUserIdentity", null)
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppUserIdentity", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -771,7 +1005,7 @@ namespace API.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.AppUserIdentity", null)
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppUserIdentity", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -780,13 +1014,13 @@ namespace API.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.AppIdentityRole", null)
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppIdentityRole", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("API.Domain.Seguridad.AppUserIdentity", null)
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppUserIdentity", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -795,37 +1029,37 @@ namespace API.Persistence.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("API.Domain.Seguridad.AppUserIdentity", null)
+                    b.HasOne("API.Seguridad.Domain.Seguridad.AppUserIdentity", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.AppUserIdentity", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.AppUserIdentity", b =>
                 {
                     b.Navigation("Usuario")
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Corporacion", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Corporacion", b =>
                 {
                     b.Navigation("UsuarioCorporaciones");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Grupo", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Grupo", b =>
                 {
                     b.Navigation("Usuarios");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Proceso", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Proceso", b =>
                 {
                     b.Navigation("Roles");
 
                     b.Navigation("Subprocesos");
                 });
 
-            modelBuilder.Entity("API.Domain.Seguridad.Usuario", b =>
+            modelBuilder.Entity("API.Seguridad.Domain.Seguridad.Usuario", b =>
                 {
                     b.Navigation("UsuarioCorporaciones");
                 });

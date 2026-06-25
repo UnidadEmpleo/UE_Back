@@ -6,30 +6,22 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace API.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialMigration : Migration
+    public partial class initialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
-                name: "AppRoleMetadatas",
-                columns: table => new
-                {
-                    AppRoleId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Value = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AppRoleMetadatas", x => x.AppRoleId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Value = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Activo = table.Column<bool>(type: "bit", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    TipoRol = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -44,8 +36,8 @@ namespace API.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    LastUpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -86,6 +78,45 @@ namespace API.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "BasesDatos",
+                columns: table => new
+                {
+                    Id = table.Column<short>(type: "smallint", nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
+                    ServerName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    DatabaseName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UserName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Password = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Port = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_BasesDatos", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CodigoPostal",
+                columns: table => new
+                {
+                    Id = table.Column<long>(type: "bigint", nullable: false),
+                    c_mnpio = table.Column<int>(type: "int", nullable: false),
+                    c_estado = table.Column<int>(type: "int", nullable: false),
+                    c_tipo_asenta = table.Column<int>(type: "int", nullable: false),
+                    c_codigo = table.Column<int>(type: "int", nullable: false),
+                    d_mnpio = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    d_estado = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    d_tipo_asenta = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    d_asenta = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    latitud = table.Column<float>(type: "real", nullable: false),
+                    longitud = table.Column<float>(type: "real", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CodigoPostal", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Corporaciones",
                 columns: table => new
                 {
@@ -93,15 +124,24 @@ namespace API.Migrations
                     Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Descripcion = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Logo = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ServerName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    DatabaseName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UserName = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Password = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    Port = table.Column<string>(type: "nvarchar(max)", nullable: true, defaultValue: "1433")
+                    LogoDerechoReporte = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Corporaciones", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EntidadFederativas",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Abreviacion = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EntidadFederativas", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -121,6 +161,22 @@ namespace API.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_EntityChangeLogs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EstadosCiviles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    Activo = table.Column<bool>(type: "bit", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EstadosCiviles", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -164,29 +220,69 @@ namespace API.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Procesos",
+                name: "NivelesEducativos",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Descr = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Tipo = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Icono = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Activo = table.Column<bool>(type: "bit", nullable: false),
-                    Ruta = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ProcesoPadreId = table.Column<int>(type: "int", nullable: true),
                     FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
                     FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Procesos", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Procesos_Procesos_ProcesoPadreId",
-                        column: x => x.ProcesoPadreId,
-                        principalTable: "Procesos",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                    table.PrimaryKey("PK_NivelesEducativos", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Sistemas",
+                columns: table => new
+                {
+                    Id = table.Column<short>(type: "smallint", nullable: false),
+                    Nombre = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Descripcion = table.Column<string>(type: "nvarchar(250)", maxLength: 250, nullable: false),
+                    Activo = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Sistemas", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "TipoRoles",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Activo = table.Column<bool>(type: "bit", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_TipoRoles", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "UserRefreshTokens",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TokenHash = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: false),
+                    ReplacedByTokenHash = table.Column<string>(type: "nvarchar(512)", maxLength: 512, nullable: true),
+                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Created = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedByIp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Revoked = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RevokedByIp = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ReasonRevoked = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Expires = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_UserRefreshTokens", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -302,19 +398,29 @@ namespace API.Migrations
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Nombre = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     PrimerApellido = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SegundoApellido = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Telefono = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SegundoApellido = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Telefono = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     Activo = table.Column<bool>(type: "bit", nullable: false),
                     TiempoInactividad = table.Column<short>(type: "smallint", nullable: false),
                     FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
                     FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CuerpoId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RegionId = table.Column<int>(type: "int", nullable: false),
                     GrupoId = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    RolId = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    AppUserIdentityId = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                    RolId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    EsUsuarioAD = table.Column<bool>(type: "bit", nullable: false),
+                    AppUserIdentityId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    Atributos = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Calendario = table.Column<string>(type: "nvarchar(max)", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Usuarios", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Usuarios_AspNetRoles_RolId",
+                        column: x => x.RolId,
+                        principalTable: "AspNetRoles",
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Usuarios_AspNetUsers_AppUserIdentityId",
                         column: x => x.AppUserIdentityId,
@@ -328,49 +434,68 @@ namespace API.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "RolesProcesos",
+                name: "CorporacionSistemaBDs",
                 columns: table => new
                 {
-                    RolId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    ProcesoId = table.Column<int>(type: "int", nullable: false),
-                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CorporacionId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    SistemaId = table.Column<short>(type: "smallint", nullable: false),
+                    BaseDatosId = table.Column<short>(type: "smallint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RolesProcesos", x => new { x.RolId, x.ProcesoId });
+                    table.PrimaryKey("PK_CorporacionSistemaBDs", x => new { x.CorporacionId, x.SistemaId, x.BaseDatosId });
                     table.ForeignKey(
-                        name: "FK_RolesProcesos_Procesos_ProcesoId",
-                        column: x => x.ProcesoId,
-                        principalTable: "Procesos",
+                        name: "FK_CorporacionSistemaBDs_BasesDatos_BaseDatosId",
+                        column: x => x.BaseDatosId,
+                        principalTable: "BasesDatos",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CorporacionSistemaBDs_Corporaciones_CorporacionId",
+                        column: x => x.CorporacionId,
+                        principalTable: "Corporaciones",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_CorporacionSistemaBDs_Sistemas_SistemaId",
+                        column: x => x.SistemaId,
+                        principalTable: "Sistemas",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "Permisos",
+                name: "Procesos",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    UsuarioId = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    RolId = table.Column<string>(type: "nvarchar(450)", nullable: true),
-                    ProcesoId = table.Column<int>(type: "int", nullable: true),
-                    Acceso = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false)
+                    Descr = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Tipo = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Icono = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Activo = table.Column<bool>(type: "bit", nullable: false),
+                    Ruta = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    ProcesoPadreId = table.Column<int>(type: "int", nullable: true),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Acciones = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: true),
+                    SistemaId = table.Column<short>(type: "smallint", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Permisos", x => x.Id);
+                    table.PrimaryKey("PK_Procesos", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Permisos_Procesos_ProcesoId",
-                        column: x => x.ProcesoId,
+                        name: "FK_Procesos_Procesos_ProcesoPadreId",
+                        column: x => x.ProcesoPadreId,
                         principalTable: "Procesos",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_Permisos_Usuarios_UsuarioId",
-                        column: x => x.UsuarioId,
-                        principalTable: "Usuarios",
-                        principalColumn: "Id");
+                        name: "FK_Procesos_Sistemas_SistemaId",
+                        column: x => x.SistemaId,
+                        principalTable: "Sistemas",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -397,11 +522,46 @@ namespace API.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_AppRoleMetadatas_Value",
-                table: "AppRoleMetadatas",
-                column: "Value",
-                unique: true);
+            migrationBuilder.CreateTable(
+                name: "Permisos",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UsuarioId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    RolId = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    ProcesoId = table.Column<int>(type: "int", nullable: true),
+                    Acceso = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Permisos", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Permisos_Procesos_ProcesoId",
+                        column: x => x.ProcesoId,
+                        principalTable: "Procesos",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RolesProcesos",
+                columns: table => new
+                {
+                    RolId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ProcesoId = table.Column<int>(type: "int", nullable: false),
+                    FechaCreacion = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    FechaUltimaActualizacion = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RolesProcesos", x => new { x.RolId, x.ProcesoId });
+                    table.ForeignKey(
+                        name: "FK_RolesProcesos_Procesos_ProcesoId",
+                        column: x => x.ProcesoId,
+                        principalTable: "Procesos",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -449,6 +609,16 @@ namespace API.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_CorporacionSistemaBDs_BaseDatosId",
+                table: "CorporacionSistemaBDs",
+                column: "BaseDatosId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CorporacionSistemaBDs_SistemaId",
+                table: "CorporacionSistemaBDs",
+                column: "SistemaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Permisos_ProcesoId",
                 table: "Permisos",
                 column: "ProcesoId");
@@ -466,9 +636,20 @@ namespace API.Migrations
                 column: "ProcesoPadreId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Procesos_SistemaId",
+                table: "Procesos",
+                column: "SistemaId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RolesProcesos_ProcesoId",
                 table: "RolesProcesos",
                 column: "ProcesoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_UserRefreshTokens_UserId_TokenHash",
+                table: "UserRefreshTokens",
+                columns: new[] { "UserId", "TokenHash" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_UsuarioCorporaciones_CorporacionId",
@@ -486,14 +667,16 @@ namespace API.Migrations
                 name: "IX_Usuarios_GrupoId",
                 table: "Usuarios",
                 column: "GrupoId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Usuarios_RolId",
+                table: "Usuarios",
+                column: "RolId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "AppRoleMetadatas");
-
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -513,10 +696,25 @@ namespace API.Migrations
                 name: "AuditLogs");
 
             migrationBuilder.DropTable(
+                name: "CodigoPostal");
+
+            migrationBuilder.DropTable(
+                name: "CorporacionSistemaBDs");
+
+            migrationBuilder.DropTable(
+                name: "EntidadFederativas");
+
+            migrationBuilder.DropTable(
                 name: "EntityChangeLogs");
 
             migrationBuilder.DropTable(
+                name: "EstadosCiviles");
+
+            migrationBuilder.DropTable(
                 name: "Logs");
+
+            migrationBuilder.DropTable(
+                name: "NivelesEducativos");
 
             migrationBuilder.DropTable(
                 name: "Permisos");
@@ -525,10 +723,16 @@ namespace API.Migrations
                 name: "RolesProcesos");
 
             migrationBuilder.DropTable(
+                name: "TipoRoles");
+
+            migrationBuilder.DropTable(
+                name: "UserRefreshTokens");
+
+            migrationBuilder.DropTable(
                 name: "UsuarioCorporaciones");
 
             migrationBuilder.DropTable(
-                name: "AspNetRoles");
+                name: "BasesDatos");
 
             migrationBuilder.DropTable(
                 name: "Procesos");
@@ -538,6 +742,12 @@ namespace API.Migrations
 
             migrationBuilder.DropTable(
                 name: "Usuarios");
+
+            migrationBuilder.DropTable(
+                name: "Sistemas");
+
+            migrationBuilder.DropTable(
+                name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

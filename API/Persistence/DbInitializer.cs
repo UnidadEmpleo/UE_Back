@@ -4,6 +4,7 @@ using API.Seguridad.Domain.Seguridad;
 using API.Seguridad.Domain.Ubicacion;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.CallRecords;
 
 
@@ -40,6 +41,10 @@ namespace API.Persistence
 
 
             // Crear roles predeterminados
+            if (!await roleManager.RoleExistsAsync("UeAdmin"))
+            {
+                await roleManager.CreateAsync(new AppIdentityRole { Name = "UeAdmin", Activo = true, Descripcion = "Rol de Administrador Usuarios", Value = "ueadmin", TipoRol = TipoRoles.Administrador });
+            }
             if (!await roleManager.RoleExistsAsync("Admin"))
             {
                 await roleManager.CreateAsync(new AppIdentityRole { Name = "Admin", Activo = true, Descripcion = "Rol de Administradores", Value = "admon", TipoRol = TipoRoles.Administrador });
@@ -60,7 +65,7 @@ namespace API.Persistence
             {
                 await roleManager.CreateAsync(new AppIdentityRole { Name = "Medico", Activo = true, Descripcion = "Rol de médico", Value = "medico", TipoRol = TipoRoles.Medico });
             }
-
+            
             if (!await roleManager.RoleExistsAsync("AtencionRegistro"))
             {
                 await roleManager.CreateAsync(new AppIdentityRole { Name = "AtencionRegistro", Activo = true, Descripcion = "Rol de Atencion y Registro", Value = "AtencionRegistro", TipoRol = TipoRoles.AtencionRegistro });
@@ -80,7 +85,8 @@ namespace API.Persistence
             {
                 await roleManager.CreateAsync(new AppIdentityRole { Name = "Capturista", Activo = true, Descripcion = "Rol de Capturista", Value = "Capturista", TipoRol = TipoRoles.Capturista });
             }
-
+            
+            var adminUEGrupoId = Guid.NewGuid().ToString();
             var adminGrupoId = Guid.NewGuid().ToString();
             var subdireccionGrupoId = Guid.NewGuid().ToString();
             var medicosGrupoId = Guid.NewGuid().ToString();
@@ -100,6 +106,15 @@ namespace API.Persistence
                         Id = adminGrupoId,
                         Nombre = "ADMIN",
                         Descr = "Grupo para Administradores del Sistema",
+                        Activo = true,
+                        FechaCreacion = DateTime.UtcNow,
+                        FechaUltimaActualizacion = DateTime.UtcNow
+                    },
+                    new Grupo
+                    {
+                        Id = adminUEGrupoId,
+                        Nombre = "ADMINUE",
+                        Descr = "Grupo para Administr Usuarios de Unidad de Empleo",
                         Activo = true,
                         FechaCreacion = DateTime.UtcNow,
                         FechaUltimaActualizacion = DateTime.UtcNow
@@ -134,7 +149,7 @@ namespace API.Persistence
                     new Grupo
                     {
                         Id = atencionRegistroGrupoId,
-                        Nombre = "ATENCIONREGISTRO",
+                        Nombre = "ATNREG",
                         Descr = "Grupo de Usuarios tipo Atención y Registro",
                         Activo = true,
                         FechaCreacion = DateTime.UtcNow,
@@ -171,7 +186,7 @@ namespace API.Persistence
                 await context.Grupos.AddRangeAsync(grupos);
                 await context.SaveChangesAsync();
             }
-
+            
             // Crear un usuario de ejemplo
             if (!userManager.Users.Any())
             {
@@ -184,9 +199,18 @@ namespace API.Persistence
                 await userManager.CreateAsync(user, "Password123!");
                 await userManager.AddToRoleAsync(user, "Admin");
 
+                var adminue = new AppUserIdentity
+                {
+                    UserName = "adminue",
+                    Email = "adminue@example.com",
+                    EmailConfirmed = true
+                };
+                await userManager.CreateAsync(adminue, "Password123!");
+                await userManager.AddToRoleAsync(adminue, "UeAdmin");
+
                 var atencionUser = new AppUserIdentity
                 {
-                    UserName = "atencionregistro",
+                    UserName = "atnregistro",
                     Email = "atencionregistro@cusaem.gob.mx",
                     EmailConfirmed = true,
                     TwoFactorEnabled = false
@@ -256,8 +280,9 @@ namespace API.Persistence
                 await userManager.AddToRoleAsync(subdirectorUser, "Subdireccion");
 
             }
-
+            
             string usuarioAdminId = Guid.NewGuid().ToString();
+            string usuarioAdminUeId = Guid.NewGuid().ToString();
             var usuarioSubdireccionId = Guid.NewGuid().ToString();
             var usuarioGerenciaId = Guid.NewGuid().ToString();
             string usuarioMedicoId = Guid.NewGuid().ToString();
@@ -282,9 +307,31 @@ namespace API.Persistence
                     GrupoId = adminGrupoId,
                     AppUserIdentityId = adminUser.Id,
                     FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
                 };
                 await context.Usuarios.AddAsync(usuario);
+
+                var adminUe = await userManager.FindByNameAsync("adminue");
+                var adminUeUser = new Usuario
+                {
+                    Id = usuarioAdminUeId,
+                    Nombre = "Admin Usuario",
+                    PrimerApellido = "UNIDAD EMPLEO",
+                    TiempoInactividad = 15,
+                    Activo = true,
+                    EsUsuarioAD = true,
+                    RolId = (await roleManager.FindByNameAsync("UeAdmin")).Id,
+                    GrupoId = adminUEGrupoId,
+                    AppUserIdentityId = adminUe.Id,
+                    FechaCreacion = DateTime.UtcNow,
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
+                };
+                await context.Usuarios.AddAsync(adminUeUser);
+
 
                 var medicoUser = await userManager.FindByNameAsync("medico");
                 var usuarioMedico = new Usuario
@@ -299,7 +346,9 @@ namespace API.Persistence
                     GrupoId = medicosGrupoId,
                     AppUserIdentityId = medicoUser.Id,
                     FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
                 };
                 await context.Usuarios.AddAsync(usuarioMedico);
 
@@ -316,7 +365,9 @@ namespace API.Persistence
                     GrupoId = subdireccionGrupoId,
                     AppUserIdentityId = subdirectorUser.Id,
                     FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
                 };
                 await context.Usuarios.AddAsync(usuariosubdirector);
                 
@@ -333,27 +384,16 @@ namespace API.Persistence
                     GrupoId = gerenciaGrupoId,
                     AppUserIdentityId = gerenteUser.Id,
                     FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
                 };
                 await context.Usuarios.AddAsync(usuarioGerente);
 
-                var atencionrUser = await userManager.FindByNameAsync("atencionregistro");
-                var usuarioatencionyregistro = new Usuario
-                {
-                    Id = usuarioAtencionRegistroId,
-                    Nombre = "Atencion",
-                    PrimerApellido = "app",
-                    TiempoInactividad = 15,
-                    Activo = true,
-                    EsUsuarioAD = false,
-                    RolId = (await roleManager.FindByNameAsync("AtencionRegistro")).Id,
-                    GrupoId = atencionRegistroGrupoId,
-                    AppUserIdentityId = atencionrUser.Id,
-                    FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
-                };
-                await context.Usuarios.AddAsync(usuarioatencionyregistro);
                 
+
+                //adminUEGrupoId,subdireccionGrupoId,gerenciaGrupoId,atencionRegistroGrupoId,psicologoGrupoId,antidopingGrupoId,capturistaGrupoId
+
                 var psicologoUser = await userManager.FindByNameAsync("psicologo");
                 var usuaripsicologo = new Usuario
                 {
@@ -367,7 +407,9 @@ namespace API.Persistence
                     GrupoId = psicologoGrupoId,
                     AppUserIdentityId = psicologoUser.Id,
                     FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
                 };
                 await context.Usuarios.AddAsync(usuaripsicologo);
 
@@ -384,7 +426,9 @@ namespace API.Persistence
                     GrupoId = antidopingGrupoId,
                     AppUserIdentityId = antidopingUser.Id,
                     FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
                 };
                 await context.Usuarios.AddAsync(usuarioantidoping);
 
@@ -401,11 +445,30 @@ namespace API.Persistence
                     GrupoId = capturistaGrupoId,
                     AppUserIdentityId = capturistaUser.Id,
                     FechaCreacion = DateTime.UtcNow,
-                    FechaUltimaActualizacion = DateTime.UtcNow
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
                 };
                 await context.Usuarios.AddAsync(usuariocapturista);
-                
 
+                var atencionrUser = await userManager.FindByNameAsync("atnregistro");
+                var usuarioatencionyregistro = new Usuario
+                {
+                    Id = usuarioAtencionRegistroId,
+                    Nombre = "Atencion",
+                    PrimerApellido = "Y registro",
+                    TiempoInactividad = 15,
+                    Activo = true,
+                    EsUsuarioAD = false,
+                    RolId = (await roleManager.FindByNameAsync("AtencionRegistro")).Id,
+                    GrupoId = atencionRegistroGrupoId,
+                    AppUserIdentityId = atencionrUser.Id,
+                    FechaCreacion = DateTime.UtcNow,
+                    FechaUltimaActualizacion = DateTime.UtcNow,
+                    CuerpoId = "CGSIBCVCT",
+                    RegionId = 0
+                };
+                await context.Usuarios.AddAsync(usuarioatencionyregistro);
                 await context.SaveChangesAsync();
             }
 
@@ -755,22 +818,10 @@ namespace API.Persistence
                        Acciones = null,
                        SistemaId = 1
                    },
+                   
                    new Proceso
                    {
-                       Descr = "Subdireccion",
-                       Tipo = "A",
-                       Icono = "book",
-                       Activo = true,
-                       Ruta = null,
-                       ProcesoPadreId = null,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Agregar\":false,\"Editar\":true,\"Borrar\":false}]",
-                       SistemaId = 3
-                   },
-                   new Proceso
-                   {
-                       Descr = "Gerencia",
+                       Descr = "Unidad de Empleo",
                        Tipo = "A",
                        Icono = "book",
                        Activo = true,
@@ -783,60 +834,7 @@ namespace API.Persistence
                    },
                    new Proceso
                    {
-                       Descr = "Atencion y Registro",
-                       Tipo = "A",
-                       Icono = "badge",
-                       Activo = false,
-                       Ruta = null,
-                       ProcesoPadreId = null,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = null,
-                       SistemaId = 3
-                   },
-
-                   new Proceso
-                   {
-                       Descr = "Registro",
-                       Tipo = "A",
-                       Icono = "books",
-                       Activo = false,
-                       Ruta = null,
-                       ProcesoPadreId = null,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = null,
-                       SistemaId = 3
-                   },
-                   new Proceso
-                   {
-                       Descr = "Psicologo",
-                       Tipo = "A",
-                       Icono = "book-bookmark",
-                       Activo = false,
-                       Ruta = null,
-                       ProcesoPadreId = null,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = null,
-                       SistemaId = 3
-                   },
-                   new Proceso
-                   {
-                       Descr = "Medico",
-                       Tipo = "A",
-                       Icono = "badge",
-                       Activo = true,
-                       Ruta = null,
-                       ProcesoPadreId = null,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Agregar\":false,\"Editar\":true,\"Borrar\":false}]",
-                       SistemaId = 3
-                   },
-                   new Proceso
-                   {
-                       Descr = "Antidoping",
+                       Descr = "Evualuaciones",
                        Tipo = "A",
                        Icono = "book",
                        Activo = true,
@@ -846,7 +844,7 @@ namespace API.Persistence
                        FechaUltimaActualizacion = DateTime.UtcNow,
                        Acciones = null,
                        SistemaId = 3
-                   }
+                   },
 
                };
 
@@ -855,14 +853,11 @@ namespace API.Persistence
 
                // Obtener los IDs de los procesos padres recién insertados
 
-               var registro = await context.Procesos.FirstAsync(p => p.Descr == "Registro" && p.Tipo == "A");
+               
                var gestionUsuario = await context.Procesos.FirstAsync(p => p.Descr == "Gestion de Usuario" && p.Tipo == "A");
-               var subdireccion = await context.Procesos.FirstAsync(p => p.Descr == "Subdireccion" && p.Tipo == "A");
-               var gerencia = await context.Procesos.FirstAsync(p => p.Descr == "Gerencia" && p.Tipo == "A");
-               var atencion = await context.Procesos.FirstAsync(p => p.Descr == "Atencion y Registro" && p.Tipo == "A");
-               var psicologo = await context.Procesos.FirstAsync(p => p.Descr == "Psicologo" && p.Tipo == "A");
-               var medico = await context.Procesos.FirstAsync(p => p.Descr == "Medico" && p.Tipo == "A");
-               var antidoping = await context.Procesos.FirstAsync(p => p.Descr == "Antidoping" && p.Tipo == "A");
+               var uniEmp = await context.Procesos.FirstAsync(p => p.Descr == "Unidad de Empleo" && p.Tipo == "A");
+               var evaluacion = await context.Procesos.FirstAsync(p => p.Descr == "Evualuaciones" && p.Tipo == "A");
+               
 
                // FASE 2: Insertar procesos HIJOS (con ProcesoPadreId válidos)
                var procesosHijos = new List<Proceso>
@@ -932,84 +927,40 @@ namespace API.Persistence
                        Tipo = "P",
                        Icono = null,
                        Activo = true,
-                       Ruta = "AspirantesList",
-                       ProcesoPadreId = registro.Id,
+                       Ruta = "AspiranteList",
+                       ProcesoPadreId = uniEmp.Id,
                        FechaCreacion = DateTime.UtcNow,
                        FechaUltimaActualizacion = DateTime.UtcNow,
                        Acciones = "[{\"Agregar\":false,\"Editar\":true,\"Borrar\":false,\"Evaluar\":false}]",
                        SistemaId = 3
                    },
-
+                   new Proceso
+                   {
+                       Descr = "Solicitudes",
+                       Tipo = "P",
+                       Icono = null,
+                       Activo = true,
+                       Ruta = "SolicitudList",
+                       ProcesoPadreId = uniEmp.Id,
+                       FechaCreacion = DateTime.UtcNow,
+                       FechaUltimaActualizacion = DateTime.UtcNow,
+                       Acciones = "[{\"Editar\":true}]",
+                       SistemaId = 3
+                   },
                    new Proceso
                    {
                        Descr = "Evaluaciones",
                        Tipo = "P",
                        Icono = null,
                        Activo = true,
-                       Ruta = "EvaluacionActiva",
-                       ProcesoPadreId = atencion.Id,
+                       Ruta = "EvaluacionList",
+                       ProcesoPadreId = evaluacion.Id,
                        FechaCreacion = DateTime.UtcNow,
                        FechaUltimaActualizacion = DateTime.UtcNow,
                        Acciones = "[{\"Evaluar\":false,\"Quitar\":true,\"Finalizar\":false}]",
                        SistemaId = 3
                    },
-
-                   new Proceso
-                   {
-                       Descr = "Evaluación Psicológica",
-                       Tipo = "P",
-                       Icono = null,
-                       Activo = true,
-                       Ruta = "Evaluacionpsicologica",
-                       ProcesoPadreId = psicologo.Id,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Editar\":true}]",
-                       SistemaId = 3
-                   },
-
-                   new Proceso
-                   {
-                       Descr = "Evaluación Médica",
-                       Tipo = "P",
-                       Icono = null,
-                       Activo = true,
-                       Ruta = "Evaluacionmedica",
-                       ProcesoPadreId = medico.Id,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Editar\":true}]",
-                       SistemaId = 3
-                   },
-
-                    new Proceso
-                   {
-                       Descr = "Evaluación Antidoping y PIE",
-                       Tipo = "P",
-                       Icono = null,
-                       Activo = true,
-                       Ruta = "Evaluacionpantidoping",
-                       ProcesoPadreId = antidoping.Id,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Editar\":true}]",
-                       SistemaId = 3
-                   },
-
-                   //Gerencia
-                   new Proceso
-                   {
-                       Descr = "Reporte Diario",
-                       Tipo = "P",
-                       Icono = null,
-                       Activo = true,
-                       Ruta = "ReporteDiario",
-                       ProcesoPadreId = gerencia.Id,
-                       FechaCreacion = DateTime.UtcNow,
-                       FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Agregar\":false,\"Editar\":true,\"Borrar\":false}]",
-                       SistemaId = 2
-                   }
+  
                };
 
                await context.Procesos.AddRangeAsync(procesosHijos);
@@ -1028,19 +979,19 @@ namespace API.Persistence
                     ProcesoId = p.Id
                 }).ToList();
                 await context.RolesProcesos.AddRangeAsync(rolesProcesos);
-
-                var archivistaRole = await roleManager.FindByNameAsync("Archivista clinico");
-                var archivoClinico = allProcesos.FirstOrDefault(p => p.Descr == "Archivo Clinico");
-                var archivistaProcesos = allProcesos
-                    .Where(p => p.SistemaId == 2 && p.ProcesoPadreId == archivoClinico?.Id || p.Id == archivoClinico?.Id)
-                    .Select(p => new RolProceso
-                    {
-                        RolId = archivistaRole.Id,
-                        ProcesoId = p.Id
-                    }).ToList();    
-                await context.RolesProcesos.AddRangeAsync(archivistaProcesos);
-                
                 await context.SaveChangesAsync();
+
+                var adminUeRole = await roleManager.FindByNameAsync("UeAdmin");
+                var roleProcesos = allProcesos.Select(p => new RolProceso
+                {
+                    RolId = adminUeRole.Id,
+                    ProcesoId = p.Id
+                }).ToList();
+                await context.RolesProcesos.AddRangeAsync(roleProcesos);
+                await context.SaveChangesAsync();
+                // UeAdmin,Subdireccion,Gerencia,Medico,AtencionRegistro,Psicologo,Antidoping,Capturista
+
+
             }
 
             if (!context.Permisos.Any())
@@ -1052,7 +1003,7 @@ namespace API.Persistence
                     .FirstOrDefaultAsync();
 
                 string accionUsuario = "[{\"Agregar\":true,\"Editar\":true,\"Inactivar\":true,\"SeleccionarRol\":true,\"SeleccionarGrupo\":true,\"Agregar permisos\":true}]";
-
+                
                 var permisos = allRolesProcesos.Select(rp => new Permiso
                 {
                     UsuarioId = usuarioAdminId,
@@ -1063,8 +1014,23 @@ namespace API.Persistence
                         : context.Procesos.First(p => p.Id == rp.ProcesoId).Acciones ?? string.Empty,
                 }).ToList();
                 await context.Permisos.AddRangeAsync(permisos);
+
+
+                /*
+                var gerencia1 = new Permiso
+                {
+                    UsuarioId = usuarioGerenciaId,
+                    RolId = (await roleManager.FindByNameAsync("Gerencia")).Id,
+                    ProcesoId = rp.ProcesoId,
+                };
+                    */
+                    
+
+
                 await context.SaveChangesAsync();
             }
+
+            
 
         }
     }

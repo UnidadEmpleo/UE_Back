@@ -75,6 +75,7 @@
   <ItemGroup>
     <Folder Include="Migrations\" />
     <Folder Include="Migrations\UnidadEmpleoDb\" />
+    <Folder Include="Persistence\Migrations\" />
   </ItemGroup>
 
 </Project>
