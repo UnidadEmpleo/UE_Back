@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph.Models;
 using Microsoft.Graph.Models.CallRecords;
+using System.Collections;
 
 
 namespace API.Persistence
@@ -60,7 +61,7 @@ namespace API.Persistence
             {
                 await roleManager.CreateAsync(new AppIdentityRole { Name = "Gerencia", Activo = true, Descripcion = "Rol de Gerente", Value = "gerente", TipoRol = TipoRoles.Gerente });
             }
-
+            
             if (!await roleManager.RoleExistsAsync("Medico"))
             {
                 await roleManager.CreateAsync(new AppIdentityRole { Name = "Medico", Activo = true, Descripcion = "Rol de médico", Value = "medico", TipoRol = TipoRoles.Medico });
@@ -86,6 +87,8 @@ namespace API.Persistence
                 await roleManager.CreateAsync(new AppIdentityRole { Name = "Capturista", Activo = true, Descripcion = "Rol de Capturista", Value = "Capturista", TipoRol = TipoRoles.Capturista });
             }
             
+
+
             var adminUEGrupoId = Guid.NewGuid().ToString();
             var adminGrupoId = Guid.NewGuid().ToString();
             var subdireccionGrupoId = Guid.NewGuid().ToString();
@@ -834,7 +837,7 @@ namespace API.Persistence
                    },
                    new Proceso
                    {
-                       Descr = "Evualuaciones",
+                       Descr = "Evaluaciones",
                        Tipo = "A",
                        Icono = "book",
                        Activo = true,
@@ -852,11 +855,9 @@ namespace API.Persistence
                await context.SaveChangesAsync();
 
                // Obtener los IDs de los procesos padres recién insertados
-
-               
                var gestionUsuario = await context.Procesos.FirstAsync(p => p.Descr == "Gestion de Usuario" && p.Tipo == "A");
                var uniEmp = await context.Procesos.FirstAsync(p => p.Descr == "Unidad de Empleo" && p.Tipo == "A");
-               var evaluacion = await context.Procesos.FirstAsync(p => p.Descr == "Evualuaciones" && p.Tipo == "A");
+               var evaluacion = await context.Procesos.FirstAsync(p => p.Descr == "Evaluaciones" && p.Tipo == "A");
                
 
                // FASE 2: Insertar procesos HIJOS (con ProcesoPadreId válidos)
@@ -916,10 +917,6 @@ namespace API.Persistence
                        Acciones = "[{\"Agregar\":true,\"Editar\":true,\"Borrar\":false}]",
                        SistemaId = 1
                    },
-
-
-
-
                    //ASPIRANTES
                    new Proceso
                    {
@@ -949,7 +946,7 @@ namespace API.Persistence
                    },
                    new Proceso
                    {
-                       Descr = "Evaluaciones",
+                       Descr = "Personal",
                        Tipo = "P",
                        Icono = null,
                        Activo = true,
@@ -962,6 +959,8 @@ namespace API.Persistence
                    },
   
                };
+
+
 
                await context.Procesos.AddRangeAsync(procesosHijos);
                await context.SaveChangesAsync();
@@ -982,15 +981,59 @@ namespace API.Persistence
                 await context.SaveChangesAsync();
 
                 var adminUeRole = await roleManager.FindByNameAsync("UeAdmin");
-                var roleProcesos = allProcesos.Select(p => new RolProceso
-                {
-                    RolId = adminUeRole.Id,
-                    ProcesoId = p.Id
-                }).ToList();
+                var roleProcesos = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal"
+                || p.Descr == "Gestion de Usuario" || p.Descr == "Usuarios" || p.Descr == "Unidad de Empleo" || p.Descr == "Aspirantes"
+                || p.Descr == "Solicitudes" || p.Descr == "Evaluaciones"
+                ).Select(p => new RolProceso { RolId = adminUeRole.Id, ProcesoId = p.Id }).ToList();
                 await context.RolesProcesos.AddRangeAsync(roleProcesos);
-                await context.SaveChangesAsync();
+
                 // UeAdmin,Subdireccion,Gerencia,Medico,AtencionRegistro,Psicologo,Antidoping,Capturista
 
+                var subdirRole = await roleManager.FindByNameAsync("Subdireccion");
+                var subdirProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal"
+                || p.Descr == "Unidad de Empleo" || p.Descr == "Aspirantes" || p.Descr == "Solicitudes" 
+                ).Select(p => new RolProceso { RolId = subdirRole.Id, ProcesoId = p.Id }).ToList();
+                await context.RolesProcesos.AddRangeAsync(subdirProceso);
+
+                var gerenteRole = await roleManager.FindByNameAsync("Gerencia");
+                var gerenteProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal"
+                || p.Descr == "Unidad de Empleo" || p.Descr == "Aspirantes" || p.Descr == "Solicitudes")
+                    .Select(p => new RolProceso { RolId = gerenteRole.Id, ProcesoId = p.Id }).ToList();
+                await context.RolesProcesos.AddRangeAsync(gerenteProceso);
+
+                var medicoRole = await roleManager.FindByNameAsync("Medico");
+                var medicoProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal").Select(p =>
+                        new RolProceso { RolId = medicoRole.Id, ProcesoId = p.Id }
+                ).ToList();
+                await context.RolesProcesos.AddRangeAsync(medicoProceso);
+
+                var arRole = await roleManager.FindByNameAsync("AtencionRegistro");
+                var arProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal").Select(p => 
+                        new RolProceso { RolId = arRole.Id, ProcesoId = p.Id }
+                ).ToList();
+                await context.RolesProcesos.AddRangeAsync(arProceso);
+
+
+                var psRole = await roleManager.FindByNameAsync("Psicologo");
+                var psProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal").Select(p =>
+                        new RolProceso { RolId = psRole.Id, ProcesoId = p.Id }
+                ).ToList();
+                await context.RolesProcesos.AddRangeAsync(psProceso);
+
+                var antiRole = await roleManager.FindByNameAsync("Antidoping");
+                var antiProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal").Select(p =>
+                        new RolProceso { RolId = antiRole.Id, ProcesoId = p.Id }
+                ).ToList();
+                await context.RolesProcesos.AddRangeAsync(antiProceso);
+
+                var captuRole = await roleManager.FindByNameAsync("Capturista");
+                var captuProceso = allProcesos.Where(p => p.Descr == "Unidad de Empleo" || p.Descr == "Aspirantes"
+                || p.Descr == "Solicitudes").Select(p =>
+                        new RolProceso { RolId = captuRole.Id, ProcesoId = p.Id }
+                ).ToList();
+                await context.RolesProcesos.AddRangeAsync(captuProceso);
+
+                await context.SaveChangesAsync();
 
             }
 
