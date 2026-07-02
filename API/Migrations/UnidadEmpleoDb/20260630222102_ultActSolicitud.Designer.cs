@@ -4,6 +4,7 @@ using API.UnidadEmpleo.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace API.Migrations.UnidadEmpleoDb
 {
     [DbContext(typeof(UnidadEmpleoDbContext))]
-    partial class UnidadEmpleoDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260630222102_ultActSolicitud")]
+    partial class ultActSolicitud
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

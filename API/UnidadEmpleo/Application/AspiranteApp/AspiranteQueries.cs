@@ -40,7 +40,7 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
                 await using var dbContext = await _factory.CreateAsync();
 
                 
-                var query  = dbContext.Aspirante.AsQueryable();
+                var query  = dbContext.Aspirante.Include(a => a.Solicitudes).AsQueryable();
                 // si perfil es administrador o subdirector todo con opciones                  
                 //    gerente o atencionregistro, todo de ellos para abajo
                 //    capturista solo ellos

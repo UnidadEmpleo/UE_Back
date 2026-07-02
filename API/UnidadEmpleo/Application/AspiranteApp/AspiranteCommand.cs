@@ -7,6 +7,7 @@ using AutoMapper;
 using MediatR;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Graph.Models;
 using System.ComponentModel.DataAnnotations;
 
 namespace API.UnidadEmpleo.Application.AspiranteApp
@@ -53,6 +54,7 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
             public string IdCuerpoCaptura { get; set; }
             public int IdRegionCaptura { get; set; }
             
+            
         }
 
         public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger,
@@ -66,15 +68,13 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
                 await using var dbContext = await _factory.CreateAsync();
 
                 var conn = dbContext.Database.GetDbConnection().ConnectionString;
-                Console.WriteLine(conn);
-
-                //dbContext.Database.CreateExecutionStrategy();
-
+                
                 // Inicia la transacción
                 await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
                     var entidad = _mapper.Map<Aspirante>(request);
+                    entidad.FechaCaptura = new DateTime();
 
                     dbContext.Set<Aspirante>().Add(entidad);
 

@@ -80,13 +80,7 @@ namespace API.UnidadEmpleo.Application.Evln
 
                     return Result<int>.Failure(mensaje, codigo);
                 }
-
-                /*catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    _logger.LogError(ex, "Error de base de datos al crear la EVALUACIÓN");
-                    return Result<int>.Failure($"Error de base de datos al crear la EVALUACIÓN:", 500);
-                }*/
+                
             }
         }
     }
@@ -109,8 +103,8 @@ namespace API.UnidadEmpleo.Application.Evln
             public required Boolean revalorable { get; set; }
             public required int IdSoliciud { get; set; }
             public required TipoEvaluacion TipoEvaluacion { get; set; }
-            public string UsuarioSalida { get; set; }
-            public string UsuarioIngreso { get; set; }
+            public string? UsuarioSalida { get; set; } 
+
             public required string UsuarioEvaluo { get; set; }
             public required string NombreUsuarioEvaluo { get; set; }
         }
@@ -167,6 +161,7 @@ namespace API.UnidadEmpleo.Application.Evln
 
                     if (!request.UsuarioSalida.Equals(""))
                         ente.UsuarioSalida = request.UsuarioSalida;
+
                     if (!request.UsuarioEvaluo.Equals(""))
                     {
                         ente.UsuarioEvaluo = request.UsuarioEvaluo;
@@ -243,6 +238,32 @@ namespace API.UnidadEmpleo.Application.Evln
 
                 if (user == null)
                     return Result<Usuario>.Failure("No existe el usuario "+request.Id, 400);
+
+                return Result<Usuario>.Success(user);
+            }
+        }
+
+    }
+
+    public class EvaluacionTerminada
+    {
+        public class Query : IRequest<Result<Usuario>>
+        {
+            public string Id { get; set; }
+        }
+
+        public class Handler(AppDbContext context) : IRequestHandler<Query, Result<Usuario>>
+        {
+            public async Task<Result<Usuario>> Handle(Query request, CancellationToken cancellationToken)
+            {
+
+                var user = await context
+                    .Usuarios
+                    .FirstOrDefaultAsync(f => f.AppUserIdentityId == request.Id, cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (user == null)
+                    return Result<Usuario>.Failure("No existe el usuario " + request.Id, 400);
 
                 return Result<Usuario>.Success(user);
             }

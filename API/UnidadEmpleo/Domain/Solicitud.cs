@@ -79,6 +79,8 @@ namespace API.UnidadEmpleo.Domain
         public List<Evaluacion> Evaluaciones { get; set; }
         public List<CartaCompromiso> CartasCompromiso { get; set; }
 
+        public DateTime? FechaUltimaActualizacion { get ; set;  }
+
     }
 
     public class Referencia : IAuditable

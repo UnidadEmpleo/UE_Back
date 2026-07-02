@@ -211,15 +211,6 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
             public int noine { get; set; }
             public int norfcHomoclave { get; set; }
 
-            
-
-
-
-
-
-
-            
-
         }
 
         public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
@@ -233,7 +224,6 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                     return Result<Unit>.Failure("El identificador de petición no coincide con el del registgro.", 400);
 
                 await using var context = await _factory.CreateAsync();
-
                 await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
                 try
@@ -246,12 +236,23 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                         return Result<Unit>.Failure("No se encontró la SOLICITUD", 404);
                     }
 
-                    //ente.FechaUltimaActualizacion = DateTime.UtcNow;
+                    ente.FechaUltimaActualizacion = DateTime.UtcNow;
                     Boolean cambios = Utils.Compara(request, ente);
                     Console.WriteLine("Cambio? " + cambios);
                     if (!cambios)
                         return Result<Unit>.Failure("Sin cambios, puede continuar", 400);
+
+                    // old = 5, new = 2 
+
+                    StatusSolicitud tmpOldStatus = ente.Status;
+                    int tmpNewStatus = (int)request.Status;
+
                     _mapper.Map(request, ente);
+
+                    // Si el estado de la petición sea menor a dos dejar el que esta, de lo contrario poner la actualización
+                    
+                    if (tmpNewStatus <= 2 && (int)tmpOldStatus >= 3) //& (int)request.Status > (int)ente.Status)  )
+                        ente.Status = tmpOldStatus;
 
                     var result = await context.SaveChangesAsync(cancellationToken) > 0;
 
@@ -279,13 +280,8 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                     }
 
                     return Result<Unit>.Failure(mensaje, codigo);
-                }/*
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    _logger.LogError(ex, "Error de base de datos al actualizar al Aspirante: {Aspirante:}", request.Curp);
-                    return Result<Unit>.Failure($"Error de base de datos al actualizar al Aspirante: {request.Curp}", 500);
-                }*/
+                }
+             
             }
         }
     }
@@ -315,6 +311,68 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                 {
                     _logger.LogError(ex, $"Error de base de datos al eliminar la SOLICITUD: {request.Id}", request.Id);
                     return Result<Unit>.Failure($"Error de base de datos al eliminar la SOLICITUD: {request.Id}", 500);
+                }
+            }
+        }
+    }
+
+    public class SolicitudUpdateStatus
+    {
+        public class Command : IRequest<Result<Unit>>
+        {
+            public int IdSolicitud { get; set; }            
+            public Boolean Revalorable { get; set; }
+            public StatusSolicitud Status { get; set; }
+            
+        }
+
+        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        {
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
+            {                
+                await using var context = await _factory.CreateAsync();
+                await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+
+                try
+                {
+                    var ente = await context.Set<Solicitud>().FindAsync([request.IdSolicitud], cancellationToken);
+
+                    if (ente == null)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return Result<Unit>.Failure("No se encontró la SOLICITUD", 404);
+                    }
+
+                    ente.FechaUltimaActualizacion = DateTime.UtcNow;
+                    ente.Status = request.Status;
+                    ente.Revalorable = request.Revalorable;
+
+                    var result = await context.SaveChangesAsync(cancellationToken) > 0;
+
+                    if (!result)
+                    {
+                        await transaction.RollbackAsync(cancellationToken);
+                        return Result<Unit>.Failure("Error al actualizar la SOLICITUD", 400);
+                    }
+
+                    await transaction.CommitAsync(cancellationToken);
+                    return Result<Unit>.Success(Unit.Value);
+                }
+                catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
+                {
+                    await transaction.RollbackAsync(cancellationToken);
+                    _logger.LogError(ex, "Error de base de datos al crear la SOLICITD");
+                    string mensaje = "";
+                    int codigo = 500;
+                    switch (sqlEx.Number)
+                    {
+                        case 2627:
+                            Console.WriteLine("Error: El registro ya existe en la base de datos.");
+                            mensaje = "Error: Ya existe una Solicitud";
+                            break;
+                    }
+
+                    return Result<Unit>.Failure(mensaje, codigo);
                 }
             }
         }

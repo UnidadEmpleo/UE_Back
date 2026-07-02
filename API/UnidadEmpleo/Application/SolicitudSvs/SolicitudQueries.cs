@@ -22,8 +22,8 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
             public int regionId { get; set; }
             public int perfilId { get; set; }
             public int statusSolicitud { get; set; }
-            public DateOnly? fechainicio { get; set; }
-            public DateOnly? fechatermino { get; set; }
+            public DateOnly fechainicio { get; set; }
+            public DateOnly fechatermino { get; set; }
         }
 
         public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<SolicitudDto>>>
@@ -35,9 +35,13 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                     return Result<List<SolicitudDto>>.Failure("La fecha de inicio debe ser menor a la de termino", 100);
                 }
 
+                DateTime utcNow = DateTime.UtcNow;
+                DateTime localTime = TimeZoneInfo.ConvertTimeFromUtc(utcNow, TimeZoneInfo.Local);
+                DateOnly today = DateOnly.FromDateTime(localTime);
+
                 await using var dbContext = await _factory.CreateAsync();
                 var query = dbContext.Solicitud.Include(b => b.Aspirante).AsQueryable();
-                DateOnly today = DateOnly.FromDateTime(DateTime.Now);
+                
                 // si perfil es administrador o subdirector todo con opciones                  
                 //    gerente o atencionregistro, todo de ellos para abajo
                 //    capturista solo ellos
@@ -48,6 +52,7 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                     // si situación < 0 cualquier situación
                     bool status = false;
                     bool reg = false;
+                    bool cuerpo = false;
 
 
                     if (request.statusSolicitud >= 0)
@@ -58,34 +63,38 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
 
                     if (request.regionId >= 0)
                     {
-                        if (!status) { query = query.Where(p => p.RegionId == request.regionId); reg = true; }
+                        reg = true;
+                        if (!status) 
+                            query = query.Where(p => p.RegionId == request.regionId); 
                         else
                             query = query.Where(p => p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud);
                     }
 
                     if (request.cuerpoId != "TODOS")
                     {
+                        cuerpo = true;
                         if (!status && !reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId);
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                         else if (status && reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud);
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                         else if (!status && reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId);
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                         else if (status && !reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && (int)p.Status == request.statusSolicitud);
+                            query = query.Where(p => 
+                                p.CorporacionId == request.cuerpoId && 
+                                (int)p.Status == request.statusSolicitud && 
+                                p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
+                        
+                    }
+                    else
+                    {
+                        if (!status )
+                            query = query.Where(p => p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);                       
+                        else 
+                            query = query.Where(p => (int)p.Status == request.statusSolicitud && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                     }
 
-                    if (request.fechainicio < today)
-                    {
-                        if (!status && !reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
-                        else if (status && reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
-                        else if (!status && reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
-                        else if (status && !reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && (int)p.Status == request.statusSolicitud);
-                    }
+                    
                 }
 
 
@@ -109,21 +118,63 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
 
                     if (request.regionId >= 0)
                     {
-                        if (!status) { query = query.Where(p => p.RegionId == request.regionId && p.CorporacionId == request.cuerpoId); reg = true; }
+                        reg = true;
+                        if (!status) 
+                            query = query.Where(p => p.RegionId == request.regionId && p.CorporacionId == request.cuerpoId);  
                         else
                             query = query.Where(p => p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId);
                     }
 
-                    if (request.fechainicio < today)
+                    if (request.fechainicio <= today)
                     {
                         if (!status && !reg)
-                            query = query.Where(p => (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino); //query = query.Where(p => (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                         else if (status && reg)
-                            query = query.Where(p => p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
+                            query = query.Where(p => p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                         else if (!status && reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                         else if (status && !reg)
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && (int)p.Status == request.statusSolicitud && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && (int)p.Status == request.statusSolicitud && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
+                    }
+
+                }
+
+                else if (request.perfilId == (int)TipoRoles.Medico || request.perfilId == (int)TipoRoles.Psicologo || request.perfilId == (int)TipoRoles.Antidoping)
+                {
+                    // opciones: ver todo, o ver solo una region o gerencia y situación 
+                    // si situación < 0 cualquier situación
+                    // opciones: ver todo, o ver solo una region o gerencia y situación 
+                    // si situación < 0 cualquier situación
+                    bool status = false;
+                    bool reg = false;
+
+                    query = query.Where(p => p.CorporacionId == request.cuerpoId);
+
+                    if (request.statusSolicitud >= 0)
+                    {
+                        query = query.Where(p => (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId);
+                        status = true;
+                    }
+
+                    if (request.regionId >= 0)
+                    {
+                        reg = true;
+                        if (!status)
+                            query = query.Where(p => p.RegionId == request.regionId && p.CorporacionId == request.cuerpoId);
+                        else
+                            query = query.Where(p => p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId);
+                    }
+
+                    if (request.fechainicio <= today)
+                    {
+                        if (!status && !reg)
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino); //query = query.Where(p => (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
+                        else if (status && reg)
+                            query = query.Where(p => p.RegionId == request.regionId && (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
+                        else if (!status && reg)
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
+                        else if (status && !reg)
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && (int)p.Status == request.statusSolicitud && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                     }
 
                 }
@@ -140,12 +191,12 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                     else
                         query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId);
 
-                    if (request.fechainicio < today)
+                    if (request.fechainicio <= today)
                     {
                         if (status)
-                            query = query.Where(p => (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
+                            query = query.Where(p => (int)p.Status == request.statusSolicitud && p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                         else
-                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);
+                            query = query.Where(p => p.CorporacionId == request.cuerpoId && p.RegionId == request.regionId && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                     }
                     else
                         query = query.Where(p => p.Curp == "X");

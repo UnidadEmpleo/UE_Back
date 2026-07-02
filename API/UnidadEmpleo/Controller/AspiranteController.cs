@@ -56,7 +56,7 @@ namespace API.UnidadEmpleo.Controller
             return HandleResult(await Mediator.Send(new GetAspiranteList.Query()));
         }
 
-        [HttpPost("perfil")]//{region}/{perfil}/{sit}")]
+        [HttpPost("perfil")]
         public async Task<IActionResult> ListAspirantesByX(GetAspiranteCapturaGerencia.Query options)  //string cuerpo, int region, int perfil,int sit)
         {
                 return HandleResult(await Mediator.Send(options));

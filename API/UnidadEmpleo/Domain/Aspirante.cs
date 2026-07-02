@@ -44,6 +44,7 @@ namespace API.UnidadEmpleo.Domain
         public string IdCuerpoCaptura { get; set; }
         public int IdRegionCaptura { get; set; }
         public Cuerpo CuerpoCaptura { get; set; }
+        public DateTime FechaCaptura { get; set; }
         
         public List<Solicitud> Solicitudes { get; set; }
 

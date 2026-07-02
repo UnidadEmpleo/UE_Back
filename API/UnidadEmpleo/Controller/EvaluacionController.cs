@@ -8,6 +8,8 @@ using API.Seguridad.DTOs.Seguridad;
 using API.Seguridad.Infrastructure.Authorization;
 using API.UnidadEmpleo.Application.Evln;
 using API.UnidadEmpleo.Application.ReferenciaApp;
+using API.UnidadEmpleo.Application.SolicitudSvs;
+using API.UnidadEmpleo.Domain;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -90,6 +92,7 @@ namespace API.UnidadEmpleo.Controller
 
             command.IdRequest = id;
             command.opcion = 1; //asigna termino
+
             return HandleResult(await Mediator.Send(command));
         }
 
@@ -98,7 +101,7 @@ namespace API.UnidadEmpleo.Controller
         {
             LoginDto loginDto = new LoginDto { Username = command.Username, Password = command.Password };
 
-            //FALTA VALIDAR QUE SOLO SEAN LOS PERFILES Y DE ACUERDO A SU TIPO PARA CREAR EL USUARIO
+            //FALTA VALIDAR QUE SOLO SEAN LOS PERFILES Y DE ACUERDO A SU TIPO PARA CREAR EL USUARIO -- front end lo trabaja
             var user = await _userManager.FindByNameAsync(loginDto.Username);
             if (user == null)
             {
@@ -122,8 +125,34 @@ namespace API.UnidadEmpleo.Controller
             command.UsuarioEvaluo = user.Id;
             
             command.IdRequest = id;
-            command.opcion = 2; //Valida resultado
-            return HandleResult(await Mediator.Send(command));
+            command.opcion = 2; 
+
+            var resultCommand = await Mediator.Send(command);
+
+            var resultEvaluacion = await Mediator.Send(new GetEvaluacionListBySolicitud.Query { idsolicitud = command.IdSoliciud });
+            if (resultEvaluacion.IsSuccess)
+            {
+                var resultAspEval = await Mediator.Send(new GetSolicitud.Query { Id = command.IdSoliciud });
+                int noEvals = resultAspEval.Value.Aspirante.Sexo == Sexo.Femenino ? 5 : 4;
+                List<Evaluacion> evals = resultEvaluacion.Value;
+                if (evals.Count == noEvals)
+                {
+                    Boolean apto = true;
+                    Boolean revalorado = false;
+                    foreach (Evaluacion e in evals)
+                    {
+                        if (!e.Resultado) apto = false;
+                        if (e.revalorable) revalorado = true;
+                    }
+
+                    var resultUpdAptitud = await Mediator.Send(
+                        new SolicitudUpdateStatus.Command { IdSolicitud = command.IdSoliciud, Revalorable = revalorado, Status = apto ? StatusSolicitud.Apto : StatusSolicitud.No_apto });
+
+                }
+            }
+
+
+            return HandleResult(resultCommand);
         }
 
 
