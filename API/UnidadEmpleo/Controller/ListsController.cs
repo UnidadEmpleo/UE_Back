@@ -3,6 +3,7 @@ using API.UnidadEmpleo.Application.Lists;
 using Microsoft.AspNetCore.Mvc;
 using API.Seguridad.Controllers;
 
+
 namespace API.UnidadEmpleo.Controller
 {
     public class ListsController : BaseApiController

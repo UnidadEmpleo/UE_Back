@@ -88,10 +88,11 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                     }
                     else
                     {
+                        
                         if (!status )
-                            query = query.Where(p => p.FechaInicio >= request.fechainicio && p.FechaFinal <= request.fechatermino);                       
+                            query = query.Where(p => p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);                       
                         else 
-                            query = query.Where(p => (int)p.Status == request.statusSolicitud && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
+                            query = query.Where(p => p.Status == (StatusSolicitud)request.statusSolicitud && p.FechaSolicitud >= request.fechainicio && p.FechaSolicitud <= request.fechatermino);
                     }
 
                     
