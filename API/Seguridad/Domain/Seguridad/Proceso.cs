@@ -61,7 +61,7 @@ namespace API.Seguridad.Domain.Seguridad
         /// <summary>
         /// Acciones asociadas al proceso, como "Crear", "Editar", "Eliminar".
         /// </summary>
-        [MaxLength(150)]
+        [MaxLength(250)]
         public string? Acciones { get; set; } // Acciones asociadas al proceso, como "Crear", "Editar", "Eliminar"  
 
         // Relación auto-referenciada

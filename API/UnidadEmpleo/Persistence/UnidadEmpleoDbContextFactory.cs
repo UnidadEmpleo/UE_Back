@@ -9,15 +9,18 @@ using Microsoft.Extensions.Caching.Memory;
 
 namespace API.UnidadEmpleo.Persistence
 {
+    /*
     public class UnidadEmpleoDbContextDesignFactory : IDesignTimeDbContextFactory<UnidadEmpleoDbContext>
     {
         public UnidadEmpleoDbContext CreateDbContext(string[] args)
         {
             var optionsBuilder = new DbContextOptionsBuilder<UnidadEmpleoDbContext>();
             optionsBuilder.UseSqlServer("Server=(localdb)\\MSSQLLocalDB;Database=UnidadEmpleo;Integrated Security=True;TrustServerCertificate=True");
+
             return new UnidadEmpleoDbContext(optionsBuilder.Options);
         }
     }
+    */
 
     public class UnidadEmpleoDbContextFactory : UnidadEmpleoDBContextFactoryInterface
     {
@@ -48,7 +51,6 @@ namespace API.UnidadEmpleo.Persistence
             var corporacionId = "";// _accessor.CorporacionId ?? throw new Exception("CorporacionId no proporcionado.");
             //var sistemaId = "";//_accessor.SistemaId ?? throw new Exception("SistemaId no proporcionado.");
 
-            
             var dbOptions = await _cache.GetOrCreateAsync($"", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
@@ -69,9 +71,7 @@ namespace API.UnidadEmpleo.Persistence
             var dbContext = new UnidadEmpleoDbContext(optionsBuilder.Options, _httpContextAccessor);
 
             var conn = dbContext.Database.GetDbConnection().ConnectionString;
-            Console.WriteLine(conn);
-
-
+            
             return dbContext;
         }
 

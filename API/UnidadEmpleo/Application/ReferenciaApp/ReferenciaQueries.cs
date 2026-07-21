@@ -14,11 +14,11 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
             public int Id { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper mapper) : IRequestHandler<Query, Result<Referencia>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper mapper) : IRequestHandler<Query, Result<Referencia>>
         {
             public async Task<Result<Referencia>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
                 var baseQuery = dbContext.Set<Referencia>().AsNoTracking()
                             .Where(x => x.Id == request.Id);
                 Referencia? queryData = await baseQuery
@@ -35,11 +35,11 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
     {
         public class Query : IRequest<Result<List<Referencia>>> { }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<Referencia>>>
+        public class Handler(UnidadEmpleoDbContext dbContext) : IRequestHandler<Query, Result<List<Referencia>>>
         {
             public async Task<Result<List<Referencia>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
 
                 var entidades = await dbContext.Set<Referencia>()
                     .AsNoTracking()
@@ -56,11 +56,11 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
             public int idsolicitud { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<Referencia>>>
+        public class Handler(UnidadEmpleoDbContext dbContext) : IRequestHandler<Query, Result<List<Referencia>>>
         {
             public async Task<Result<List<Referencia>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
 
                 var entidades = await dbContext.Set<Referencia>()
                     .Where(x => x.IdSoliciud == request.idsolicitud)

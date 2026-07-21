@@ -1,9 +1,10 @@
+using API.Seguridad.Application.Seguridad.Usuarios.Commands;
+using API.Seguridad.Application.Seguridad.Usuarios.Queries;
 using API.Seguridad.Domain.Seguridad;
 using API.Seguridad.DTOs.Seguridad;
 using API.Seguridad.Infrastructure.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using API.Seguridad.Application.Seguridad.Usuarios.Commands;
-using API.Seguridad.Application.Seguridad.Usuarios.Queries;
 
 namespace API.Seguridad.Controllers.Seguridad
 {
@@ -13,17 +14,10 @@ namespace API.Seguridad.Controllers.Seguridad
     {
         
         private readonly UsuarioCacheService _usuarioCacheService;
-        
+
         public UsersController(UsuarioCacheService usuarioCacheService) : base()
         {
-            _usuarioCacheService = usuarioCacheService;
-        }
-
-        [HttpGet]
-        [AuthorizeByTipoRol(TipoRoles.Administrador)]
-        public async Task<ActionResult<List<UserDto>>> GetUsers()
-        {
-            return HandleResult(await Mediator.Send(new GetUserList.Query()));
+            _usuarioCacheService = usuarioCacheService;            
         }
 
         [HttpGet("{id}")]
@@ -32,6 +26,18 @@ namespace API.Seguridad.Controllers.Seguridad
             return HandleResult(await Mediator.Send(new GetUserById.Query { Id = id }));
         }
 
+        [HttpPost("np")]
+        public async Task<ActionResult<string>> ChangePassword([FromBody] ChangePswUser.Command command)
+        {
+            return HandleResult(await Mediator.Send(command));
+        }
+
+        [HttpGet]
+        [AuthorizeByTipoRol(TipoRoles.Administrador)]
+        public async Task<ActionResult<List<UserDto>>> GetUsers()
+        {
+            return HandleResult(await Mediator.Send(new GetUserList.Query()));
+        }
         [HttpPost]
         [AuthorizeByTipoRol(TipoRoles.Administrador)]
         public async Task<ActionResult<string>> CreateUser([FromBody] CreateUser.Command command)
@@ -54,6 +60,8 @@ namespace API.Seguridad.Controllers.Seguridad
         {
             return HandleResult(await Mediator.Send(new ActiveInactiveUser.Command { Id = id, Activo = false }));
         }
+
+        
 
         [HttpPost("clear-cache")]
         public IActionResult ClearCache()

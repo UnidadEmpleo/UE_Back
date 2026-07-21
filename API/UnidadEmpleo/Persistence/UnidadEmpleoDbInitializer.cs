@@ -40,13 +40,7 @@ namespace API.UnidadEmpleo.Persistence
                 r60,r61,r62,r63,r64,r65,r66,r67,r68,r69,
             };
 
-            /*if (!await context.Region.AnyAsync())
-            {
-                await context.Region.AddRangeAsync(regiones);
-                await context.SaveChangesAsync();
-            }
-            */
-
+           
 
             if (!await context.Corporacion.AnyAsync())
             {

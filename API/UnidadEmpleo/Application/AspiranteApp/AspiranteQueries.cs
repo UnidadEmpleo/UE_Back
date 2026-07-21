@@ -33,12 +33,11 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
             public int situacion {  get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<API.UnidadEmpleo.Domain.Aspirante>>>
+        public class Handler(UnidadEmpleoDbContext dbContext) : IRequestHandler<Query, Result<List<API.UnidadEmpleo.Domain.Aspirante>>>
         {
             public async Task<Result<List<API.UnidadEmpleo.Domain.Aspirante>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
-
+                
                 
                 var query  = dbContext.Aspirante.Include(a => a.Solicitudes).AsQueryable();
                 // si perfil es administrador o subdirector todo con opciones                  
@@ -139,7 +138,7 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
             public int region { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper mapper, ICorporacionContextAccessor accessor, IHttpContextAccessor httpContextAccessor) : IRequestHandler<Query, Result<Aspirante>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper mapper, ICorporacionContextAccessor accessor, IHttpContextAccessor httpContextAccessor) : IRequestHandler<Query, Result<Aspirante>>
         {
             public async Task<Result<Aspirante>> Handle(Query request, CancellationToken cancellationToken)
             {
@@ -151,14 +150,14 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
                 Aspirante? aspirante;
                 if (request.perfil == (int)TipoRoles.Gerente || request.perfil == (int)TipoRoles.Administrador || request.perfil == (int)TipoRoles.Subdirector)
                 {
-                    await using var dbContext = await _factory.CreateAsync();
+                    //await using var dbContext = await _factory.CreateAsync();
                     var baseQuery = dbContext.Set<Aspirante>().AsNoTracking()
                                 .Where(x => (x.Curp == request.Curp ));
                     aspirante = await baseQuery.FirstOrDefaultAsync(cancellationToken);
                 }
                 else
                 {
-                    await using var dbContext = await _factory.CreateAsync();
+                    //await using var dbContext = await _factory.CreateAsync();
                     var baseQuery = dbContext.Set<Aspirante>().AsNoTracking()
                                 .Where(x => (x.Curp == request.Curp && x.IdCuerpoCaptura == request.cuerpoId && x.IdRegionCaptura == request.region));
                     aspirante = await baseQuery.FirstOrDefaultAsync(cancellationToken);
@@ -178,12 +177,11 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
     {
         public class Query : IRequest<Result<List<API.UnidadEmpleo.Domain.Aspirante>>> { }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<API.UnidadEmpleo.Domain.Aspirante>>>
+        public class Handler(UnidadEmpleoDbContext dbContext) : IRequestHandler<Query, Result<List<API.UnidadEmpleo.Domain.Aspirante>>>
         {
             public async Task<Result<List<API.UnidadEmpleo.Domain.Aspirante>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
-
+                
                 var entidades = await dbContext.Set<API.UnidadEmpleo.Domain.Aspirante>()
                     .AsNoTracking()
                     .ToListAsync(cancellationToken);
@@ -202,7 +200,7 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
             public PaginationParams Pagination { get; set; } = new();
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper) : IRequestHandler<Query, Result<PagedResult<AspiranteDto>>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper _mapper) : IRequestHandler<Query, Result<PagedResult<AspiranteDto>>>
         {
             public async Task<Result<PagedResult<AspiranteDto>>> Handle(Query request, CancellationToken cancellationToken)
             {
@@ -219,9 +217,9 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
                     return Result<PagedResult<AspiranteDto>>.Failure($"Invalid SortBy field: {pagination.SortBy}", 400);
                 }
 
-                await using var context = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
 
-                var query = context
+                var query = dbContext
                     .Set< API.UnidadEmpleo.Domain.Aspirante>()
                     .AsNoTracking()
                     .AsQueryable();

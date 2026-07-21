@@ -101,7 +101,7 @@ namespace API.UnidadEmpleo.Controller
         {
             LoginDto loginDto = new LoginDto { Username = command.Username, Password = command.Password };
 
-            //FALTA VALIDAR QUE SOLO SEAN LOS PERFILES Y DE ACUERDO A SU TIPO PARA CREAR EL USUARIO -- front end lo trabaja
+            //Front end lo hace VALIDAR QUE SOLO SEAN LOS PERFILES Y DE ACUERDO A SU TIPO PARA CREAR EL USUARIO
             var user = await _userManager.FindByNameAsync(loginDto.Username);
             if (user == null)
             {
@@ -130,27 +130,30 @@ namespace API.UnidadEmpleo.Controller
             var resultCommand = await Mediator.Send(command);
 
             var resultEvaluacion = await Mediator.Send(new GetEvaluacionListBySolicitud.Query { idsolicitud = command.IdSoliciud });
-            if (resultEvaluacion.IsSuccess)
+
+            //Verifica que el guardado sea correcto, el tipo de evaluación se de Atención y Registro y el revalorable = true (indica que ya termino la evaluación)
+            if (resultEvaluacion.IsSuccess && command.revalorable && command.TipoEvaluacion == TipoEvaluacion.Registro)
             {
                 var resultAspEval = await Mediator.Send(new GetSolicitud.Query { Id = command.IdSoliciud });
                 int noEvals = resultAspEval.Value.Aspirante.Sexo == Sexo.Femenino ? 5 : 4;
                 List<Evaluacion> evals = resultEvaluacion.Value;
+                //Recorre las evaluaciones y en base a su resultado cambia el estatus de la solicitud como apto o no apto.
                 if (evals.Count == noEvals)
                 {
                     Boolean apto = true;
                     Boolean revalorado = false;
-                    foreach (Evaluacion e in evals)
-                    {
-                        if (!e.Resultado) apto = false;
-                        if (e.revalorable) revalorado = true;
-                    }
-
-                    var resultUpdAptitud = await Mediator.Send(
-                        new SolicitudUpdateStatus.Command { IdSolicitud = command.IdSoliciud, Revalorable = revalorado, Status = apto ? StatusSolicitud.Apto : StatusSolicitud.No_apto });
-
+                    Boolean todosEvaluaron = true;
+                    
+                        foreach (Evaluacion e in evals)
+                        {
+                            if (e.UsuarioEvaluo.Equals("")) todosEvaluaron = false;
+                            if (!e.Resultado) apto = false;
+                            if (e.revalorable && e.TipoEvaluacion != TipoEvaluacion.Registro) revalorado = true;
+                        }
+                        if (todosEvaluaron)
+                            await Mediator.Send(new SolicitudUpdateStatus.Command { IdSolicitud = command.IdSoliciud, Revalorable = revalorado, Status = apto ? StatusSolicitud.Apto : StatusSolicitud.No_apto });                                         
                 }
             }
-
 
             return HandleResult(resultCommand);
         }

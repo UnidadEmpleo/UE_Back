@@ -51,6 +51,7 @@ namespace API.Seguridad.Application.Seguridad.Procesos.Queries
             }
 
 
+
             public async Task<List<ProcesoDto>> Handle(Query request, CancellationToken cancellationToken)
             {
                 List<ProcesoDto>? retorno = await _context.Procesos
@@ -66,6 +67,7 @@ namespace API.Seguridad.Application.Seguridad.Procesos.Queries
                         Icono = p.Icono,
                         ProcesoPadreId = p.ProcesoPadreId,
                         SistemaId = p.SistemaId,
+                        Acciones = p.Acciones,
                         Subprocesos = p.Subprocesos.Select(sp => new ProcesoDto
                         {
                             Id = sp.Id,

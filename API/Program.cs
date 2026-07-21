@@ -6,9 +6,7 @@ using API.Seguridad.Application.Seguridad.Grupos.Validators;
 using API.Seguridad.Domain.Seguridad;
 using API.Seguridad.Infrastructure;
 using API.Seguridad.Infrastructure.Authorization;
-using API.Seguridad.Infrastructure.Authorization;
 using API.Seguridad.Middleware;
-using API.UnidadEmpleo.DTO;
 using API.UnidadEmpleo.Persistence;
 using API.UnidadEmpleo.Services;
 using Azure.Identity;
@@ -30,7 +28,6 @@ using System.Reflection;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
-
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,8 +53,7 @@ builder.Services.AddSingleton(provider =>
 });
 
 //Este servicio quita referencias circulares
-builder.Services.AddControllers().AddJsonOptions(x =>
-                x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
+builder.Services.AddControllers().AddJsonOptions(x => x.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles);
 
 builder.Services.AddSingleton<IGraphManager, GraphManager>();
 
@@ -225,7 +221,7 @@ builder.Services.AddControllers(options =>
 
 // Leer origenes permitidos desde configuración
 var allowedOrigins = builder.Configuration.GetSection("AllowedOrigins").Get<string[]>()
-    ?? ["http://localhost:8080", "http://192.168.186.1:8080"];
+    ?? ["http://localhost:8080"];
 
 builder.Services.AddCors(options => {
     options.AddDefaultPolicy(policy =>

@@ -50,6 +50,7 @@ namespace API.UnidadEmpleo.Persistence
                 optionsBuilder.ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning));
             }
         }
+        
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -152,25 +153,12 @@ namespace API.UnidadEmpleo.Persistence
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Id).ValueGeneratedOnAdd();
             });
-
-            // -------- Configuración de Vistas Materializadas del Esquema Reportes --------
-            // NOTA: Las vistas se excluyen de migraciones y se gestionan mediante scripts SQL
-
-
-            // Excluir TODAS las vistas de migraciones
-            if (Database.IsRelational())
-            {
-                //modelBuilder.Entity<MedicamentosInexistentesView>().Metadata.SetIsTableExcludedFromMigrations(true);
-            }
-
             
-
         }
 
         public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
-            //await RegistrarBitacoraDetalleSalidaMedicamentoAsync();
-
+            
             var auditEntries = OnBeforeSaveChanges();
             var result = await base.SaveChangesAsync(cancellationToken);
 

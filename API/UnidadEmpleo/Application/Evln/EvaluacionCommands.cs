@@ -6,6 +6,7 @@ using API.Seguridad.DTOs.Seguridad;
 using API.UnidadEmpleo.Domain;
 using API.UnidadEmpleo.Persistence;
 using AutoMapper;
+using iText.Commons.Actions.Contexts;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Data.SqlClient;
@@ -37,7 +38,7 @@ namespace API.UnidadEmpleo.Application.Evln
 
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, AppDbContext context, IMapper _mapper, ILogger<Handler> _logger,
+        public class Handler(UnidadEmpleoDbContext dbContext, AppDbContext context, IMapper _mapper, ILogger<Handler> _logger,
             IHttpContextAccessor http, IMediator mediator) : IRequestHandler<Command, Result<int>>
         {
             public async Task<Result<int>> Handle(Command request, CancellationToken cancellationToken)
@@ -45,47 +46,52 @@ namespace API.UnidadEmpleo.Application.Evln
                 if (request == null)
                     return Result<int>.Failure("Los datos de la EVALUACIÓN no pueden ser nulos.", 400);
 
-                await using var dbContext = await _factory.CreateAsync();
+                int id = 0;
 
                 // Inicia la transacción
-                await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-                try
+                
+                var strategy = dbContext.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                    var entidad = _mapper.Map<Evaluacion>(request);
-                    entidad.Ingreso = DateTime.Now;
-                    dbContext.Set<Evaluacion>().Add(entidad);
-                    var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
-                    if (!result)
+                    await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                    try
+                    {
+                        var entidad = _mapper.Map<Evaluacion>(request);
+                        entidad.Ingreso = DateTime.Now;
+                        dbContext.Set<Evaluacion>().Add(entidad);
+                        var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
+                        if (!result)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<int>.Failure("Error al crear la EVALUACIÓN", 400);
+                        }
+                        await transaction.CommitAsync(cancellationToken);
+                        id = entidad.Id;
+                        return Result<int>.Success(id);
+                    }
+
+                    catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
                     {
                         await transaction.RollbackAsync(cancellationToken);
-                        return Result<int>.Failure("Error al crear la EVALUACIÓN", 400);
-                    }
-                    await transaction.CommitAsync(cancellationToken);
-                    return Result<int>.Success(entidad.Id);
-                }
+                        _logger.LogError(ex, "Error de base de datos al crear la EVALUACIÓN " + sqlEx.Number);
+                        string mensaje = "";
+                        int codigo = 500;
+                        switch (sqlEx.Number)
+                        {
+                            case 2627:
+                                Console.WriteLine("Error: El registro ya existe en la base de datos.");
+                                mensaje = "Error: Ya existe una Solicitud";
+                                break;
+                        }
 
-                catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    _logger.LogError(ex, "Error de base de datos al crear la EVALUACIÓN "+sqlEx.Number);
-                    string mensaje = "";
-                    int codigo = 500;
-                    switch (sqlEx.Number)
-                    {
-                        case 2627:
-                            Console.WriteLine("Error: El registro ya existe en la base de datos.");
-                            mensaje = "Error: Ya existe una Solicitud";
-                            break;
+                        return Result<int>.Failure(mensaje, codigo);
                     }
+                });
+                return Result<int>.Success(id);
 
-                    return Result<int>.Failure(mensaje, codigo);
-                }
-                
             }
         }
     }
-
-
 
     public class EvaluacionUpdate
     {
@@ -109,7 +115,7 @@ namespace API.UnidadEmpleo.Application.Evln
             public required string NombreUsuarioEvaluo { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext context, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
@@ -119,72 +125,79 @@ namespace API.UnidadEmpleo.Application.Evln
                 if (request.Id != request.IdRequest)
                     return Result<Unit>.Failure("El identificador no coincide con el contenido.", 400);
 
-                await using var context = await _factory.CreateAsync();
+                if (request.Id != request.IdRequest || request.Id == 0 || request.IdRequest == 0)
+                    return Result<Unit>.Failure("Se ha perdido el identificador de la evaluación, vuelva a entrar a la evaluación.", 400);
 
-                await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-
-                try
+                var strategy = context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
-                    var ente = await context.Set<Evaluacion>().FindAsync([request.Id], cancellationToken);
+                    await using var transaction = await context.Database.BeginTransactionAsync();
 
-                    if (ente == null)
+                    try
+                    {
+                        var ente = await context.Set<Evaluacion>().FindAsync([request.Id], cancellationToken);
+
+                        if (ente == null)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("No se encontró la Evaluación", 404);
+                        }
+
+                        Boolean cambios = false;
+                        if (ente.Salida != request.Salida)
+                        {
+                            ente.Salida = DateTime.Now; 
+                            cambios = true;
+                        }
+                        if (ente.Resultado != request.Resultado)
+                        {
+                            ente.Resultado = request.Resultado;
+                            cambios = true;
+                        }
+                        if (!ente.Observaciones.Equals(request.Observaciones))
+                        {
+                            ente.Observaciones = request.Observaciones;
+                            cambios = true;
+                        }
+                    
+                        if (ente.revalorable != request.revalorable)
+                        {
+                            ente.revalorable = request.revalorable;
+                            cambios = true;
+                        }
+                    
+                        if (!cambios)
+                            Result<Unit>.Success(Unit.Value);
+
+                        if (!request.UsuarioSalida.Equals(""))
+                            ente.UsuarioSalida = request.UsuarioSalida;
+
+                        if (!request.UsuarioEvaluo.Equals(""))
+                        {
+                            ente.UsuarioEvaluo = request.UsuarioEvaluo;
+                            ente.NombreUsuarioEvaluo = request.NombreUsuarioEvaluo;
+                        }
+
+                        var result = await context.SaveChangesAsync(cancellationToken) > 0;
+
+                        if (!result)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("Error al actualizar la Evaluación", 400);
+                        }
+
+                        await transaction.CommitAsync(cancellationToken);
+                        return Result<Unit>.Success(Unit.Value);
+                    }
+                    catch (Exception ex)
                     {
                         await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("No se encontró la Evaluación", 404);
+                        _logger.LogError(ex, "Error de base de datos al actualizar la Evaluación: {Id:}", request.Id);
+                        return Result<Unit>.Failure($"Error de base de datos al actualizar la Evaluación: {request.Id}", 500);
                     }
+                });
 
-                    Boolean cambios = false;
-                    if (ente.Salida != request.Salida)
-                    {
-                        ente.Salida = request.Salida;
-                        cambios = true;
-                    }
-                    if (ente.Resultado != request.Resultado)
-                    {
-                        ente.Resultado = request.Resultado;
-                        cambios = true;
-                    }
-                    if (!ente.Observaciones.Equals(request.Observaciones))
-                    {
-                        ente.Observaciones = request.Observaciones;
-                        cambios = true;
-                    }
-                    
-                    if (ente.revalorable != request.revalorable)
-                    {
-                        ente.revalorable = request.revalorable;
-                        cambios = true;
-                    }
-                    
-                    if (!cambios)
-                        Result<Unit>.Success(Unit.Value);
-
-                    if (!request.UsuarioSalida.Equals(""))
-                        ente.UsuarioSalida = request.UsuarioSalida;
-
-                    if (!request.UsuarioEvaluo.Equals(""))
-                    {
-                        ente.UsuarioEvaluo = request.UsuarioEvaluo;
-                        ente.NombreUsuarioEvaluo = request.NombreUsuarioEvaluo;
-                    }
-
-                    var result = await context.SaveChangesAsync(cancellationToken) > 0;
-
-                    if (!result)
-                    {
-                        await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("Error al actualizar la Evaluación", 400);
-                    }
-
-                    await transaction.CommitAsync(cancellationToken);
-                    return Result<Unit>.Success(Unit.Value);
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    _logger.LogError(ex, "Error de base de datos al actualizar la Evaluación: {Id:}", request.Id);
-                    return Result<Unit>.Failure($"Error de base de datos al actualizar la Evaluación: {request.Id}", 500);
-                }
+                return Result<Unit>.Success(Unit.Value);
             }
         }
     }
@@ -196,11 +209,11 @@ namespace API.UnidadEmpleo.Application.Evln
             public int Id { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext context, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
-                await using var context = await _factory.CreateAsync();
+                
                 try
                 {
                     var entidad = await context.Set<Evaluacion>().FindAsync([request.Id], cancellationToken); //.FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);

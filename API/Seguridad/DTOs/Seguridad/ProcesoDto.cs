@@ -12,5 +12,6 @@ namespace API.Seguridad.DTOs.Seguridad
         public short SistemaId { get; set; }
         public SistemaDto Sistema { get; set; }
         public List<ProcesoDto> Subprocesos { get; set; } = new();
+        public string? Acciones { get; set; }
     }
 }

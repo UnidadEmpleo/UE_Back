@@ -4,6 +4,7 @@ using API.UnidadEmpleo.Domain;
 using API.UnidadEmpleo.DTO;
 using API.UnidadEmpleo.Persistence;
 using AutoMapper;
+using iText.Commons.Actions.Contexts;
 using MediatR;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -85,54 +86,50 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
             public int noine { get; set; }
             public int norfcHomoclave { get; set; }
 
-            //complemento de datos
-
-
-
             //public List<Referencia> Referencias { get; set; }
             //public List<Evaluacion> Evaluaciones { get; set; }
             //public List<CartaCompromiso> CartasCompromiso { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger,
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper _mapper, ILogger<Handler> _logger,
             IHttpContextAccessor http, IMediator mediator) : IRequestHandler<Command, Result<int>>
         {
             public async Task<Result<int>> Handle(Command request, CancellationToken cancellationToken)
             {
                 if (request == null)
                     return Result<int>.Failure("Los datos de la SOLICITUD no pueden ser nulos.", 400);
-
-                await using var dbContext = await _factory.CreateAsync();
-
-                // Inicia la transacción
-                await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-                try
+                int id = 0;
+                var strategy = dbContext.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
                 {
+                    await using var transaction = await dbContext.Database.BeginTransactionAsync();
+                    try
+                    {
+                        var entidad = _mapper.Map<Solicitud>(request);
 
-                    var entidad = _mapper.Map<Solicitud>(request);
-                    //entidad.UltimoEmpleo = _mapper.Map<UltimoEmpleo>(request.UltimoEmpleo);
-                    //entidad.Expediente = _mapper.Map<Expediente>(request.Expediente);
+                        dbContext.Set<Solicitud>().Add(entidad);
 
-                    dbContext.Set<Solicitud>().Add(entidad);
+                        var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
 
-                    var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
+                        if (!result)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<int>.Failure("Error al crear la Solicitud", 400);
+                        }
 
-                    if (!result)
+                        await transaction.CommitAsync(cancellationToken);
+                        id = entidad.Id;
+                        return Result<int>.Success(id);
+                    }
+                    catch (Exception ex)
                     {
                         await transaction.RollbackAsync(cancellationToken);
-                        return Result<int>.Failure("Error al crear la Solicitud", 400);
+                        _logger.LogError(ex, "Error de base de datos al crear al Aspirante");
+                        return Result<int>.Failure($"Error de base de datos al crear al Aspirante:", 500);
                     }
+                });
 
-                    await transaction.CommitAsync(cancellationToken);
-
-                    return Result<int>.Success(entidad.Id);
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    _logger.LogError(ex, "Error de base de datos al crear al Aspirante");
-                    return Result<int>.Failure($"Error de base de datos al crear al Aspirante:", 500);
-                }
+                return Result<int>.Success(id);
             }
         }
     }
@@ -213,7 +210,7 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
 
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
@@ -223,65 +220,76 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                 if (request.Id != request.IdRequest)
                     return Result<Unit>.Failure("El identificador de petición no coincide con el del registgro.", 400);
 
-                await using var context = await _factory.CreateAsync();
-                await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+                var strategy = dbContext.Database.CreateExecutionStrategy();
 
-                try
+                await strategy.ExecuteAsync(async () =>
                 {
-                    var ente = await context.Set<Solicitud>().FindAsync([request.Id], cancellationToken);
+                    await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-                    if (ente == null)
+                 
+                    // Operaciones
+                    try
+                    {
+                        var ente = await dbContext.Set<Solicitud>().FindAsync([request.Id], cancellationToken);
+
+                        if (ente == null)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("No se encontró la SOLICITUD", 404);
+                        }
+
+                        ente.FechaUltimaActualizacion = DateTime.UtcNow;
+                        Boolean cambios = Utils.Compara(request, ente);
+
+                        if (!cambios)
+                            return Result<Unit>.Failure("Sin cambios, puede continuar", 400);
+
+                        // old = 5, new = 2 
+
+                        StatusSolicitud tmpOldStatus = ente.Status;
+                        int tmpNewStatus = (int)request.Status;
+
+                        _mapper.Map(request, ente);
+
+                        // Condición derivado de la actualización por 
+                        // Si el estado de la petición sea menor a dos dejar el que esta, de lo contrario poner la actualización
+                        if (tmpNewStatus <= 2 && (int)tmpOldStatus >= 3) //& (int)request.Status > (int)ente.Status)  )
+                            ente.Status = tmpOldStatus;
+
+                        var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
+
+                        if (!result)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("Error al actualizar la SOLICITUD", 400);
+                        }
+
+                        await transaction.CommitAsync(cancellationToken);
+                       
+                    }
+                    catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
                     {
                         await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("No se encontró la SOLICITUD", 404);
+                        _logger.LogError(ex, "Error de base de datos al crear la SOLICITD");
+                        string mensaje = "";
+                        int codigo = 500;
+                        switch (sqlEx.Number)
+                        {
+                            case 2627:
+                                Console.WriteLine("Error: El registro ya existe en la base de datos.");
+                                mensaje = "Error: Ya existe una Solicitud";
+                                break;
+                        }
+
+                        return Result<Unit>.Failure(mensaje, codigo);
                     }
 
-                    ente.FechaUltimaActualizacion = DateTime.UtcNow;
-                    Boolean cambios = Utils.Compara(request, ente);
-                    Console.WriteLine("Cambio? " + cambios);
-                    if (!cambios)
-                        return Result<Unit>.Failure("Sin cambios, puede continuar", 400);
-
-                    // old = 5, new = 2 
-
-                    StatusSolicitud tmpOldStatus = ente.Status;
-                    int tmpNewStatus = (int)request.Status;
-
-                    _mapper.Map(request, ente);
-
-                    // Si el estado de la petición sea menor a dos dejar el que esta, de lo contrario poner la actualización
-                    
-                    if (tmpNewStatus <= 2 && (int)tmpOldStatus >= 3) //& (int)request.Status > (int)ente.Status)  )
-                        ente.Status = tmpOldStatus;
-
-                    var result = await context.SaveChangesAsync(cancellationToken) > 0;
-
-                    if (!result)
-                    {
-                        await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("Error al actualizar la SOLICITUD", 400);
-                    }
-
-                    await transaction.CommitAsync(cancellationToken);
                     return Result<Unit>.Success(Unit.Value);
-                }
-                catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
-                    _logger.LogError(ex, "Error de base de datos al crear la SOLICITD");
-                    string mensaje = "";
-                    int codigo = 500;
-                    switch (sqlEx.Number)
-                    {
-                        case 2627:
-                            Console.WriteLine("Error: El registro ya existe en la base de datos.");
-                            mensaje = "Error: Ya existe una Solicitud";
-                            break;
-                    }
 
-                    return Result<Unit>.Failure(mensaje, codigo);
-                }
-             
+                });
+
+                return Result<Unit>.Success(Unit.Value);
+               
             }
         }
     }
@@ -293,18 +301,17 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
             public int Id { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext dbContext, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
-            {
-                await using var context = await _factory.CreateAsync();
+            {                
                 try
                 {
-                    var entidad = await context.Set<Solicitud>().FindAsync([request.Id], cancellationToken); //.FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
+                    var entidad = await dbContext.Set<Solicitud>().FindAsync([request.Id], cancellationToken); //.FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);
                     if (entidad == null)
                         return Result<Unit>.Failure("No se encontró al Aspirante", 404);
-                    context.Remove(entidad);
-                    var result = await context.SaveChangesAsync(cancellationToken) > 0;
+                    dbContext.Remove(entidad);
+                    var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
                     return result ? Result<Unit>.Success(Unit.Value) : Result<Unit>.Failure("No fue posible eliminar al Aspirante", 400);
                 }
                 catch (Exception ex)
@@ -326,16 +333,16 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
             
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {                
-                await using var context = await _factory.CreateAsync();
-                await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+                //await using var context = await _factory.CreateAsync();
+                await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
 
                 try
                 {
-                    var ente = await context.Set<Solicitud>().FindAsync([request.IdSolicitud], cancellationToken);
+                    var ente = await dbContext.Set<Solicitud>().FindAsync([request.IdSolicitud], cancellationToken);
 
                     if (ente == null)
                     {
@@ -347,7 +354,7 @@ namespace API.UnidadEmpleo.Application.SolicitudSvs
                     ente.Status = request.Status;
                     ente.Revalorable = request.Revalorable;
 
-                    var result = await context.SaveChangesAsync(cancellationToken) > 0;
+                    var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
 
                     if (!result)
                     {

@@ -5,6 +5,7 @@ using API.UnidadEmpleo.Persistence;
 using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace API.UnidadEmpleo.Application.Cuerpoa
 {
@@ -16,11 +17,12 @@ namespace API.UnidadEmpleo.Application.Cuerpoa
             public string Id { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper mapper) : IRequestHandler<Query, Result<Cuerpo>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper mapper) : IRequestHandler<Query, Result<Cuerpo>>
         {
             public async Task<Result<Cuerpo>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
+
                 var baseQuery = dbContext.Set<Cuerpo>().AsNoTracking()
                             .Where(x => x.Id == request.Id)
                             .Include(b => b.Regiones);
@@ -30,6 +32,7 @@ namespace API.UnidadEmpleo.Application.Cuerpoa
                     return Result<Cuerpo>.Failure("No se encontró el CUERPO", 404);
 
                 return Result<Cuerpo>.Success(item);
+
             }
         }
     }
@@ -38,13 +41,19 @@ namespace API.UnidadEmpleo.Application.Cuerpoa
     {
         public class Query : IRequest<Result<List<Cuerpo>>> { }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<Cuerpo>>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMemoryCache _cache) : IRequestHandler<Query, Result<List<Cuerpo>>>
         {
             public async Task<Result<List<Cuerpo>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                
+                var entidades = await _cache.GetOrCreateAsync($"corporacion", async entry =>
+                {
+                    entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(25);
 
-                var entidades = await dbContext.Set<Cuerpo>().Include(b => b.Regiones).AsNoTracking().ToListAsync(cancellationToken);
+                    var retorno = await dbContext.Set<Cuerpo>().Include(b => b.Regiones).AsNoTracking().ToListAsync(cancellationToken);
+
+                    return retorno;
+                });
 
                 return Result<List<Cuerpo>>.Success(entidades);
             }
@@ -61,7 +70,7 @@ namespace API.UnidadEmpleo.Application.Cuerpoa
             public PaginationParams Pagination { get; set; } = new();
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper) : IRequestHandler<Query, Result<PagedResult<CuerpoDto>>>
+        public class Handler(UnidadEmpleoDbContext context, IMapper _mapper) : IRequestHandler<Query, Result<PagedResult<CuerpoDto>>>
         {
             public async Task<Result<PagedResult<CuerpoDto>>> Handle(Query request, CancellationToken cancellationToken)
             {
@@ -78,7 +87,6 @@ namespace API.UnidadEmpleo.Application.Cuerpoa
                     return Result<PagedResult<CuerpoDto>>.Failure($"Invalid SortBy field: {pagination.SortBy}", 400);
                 }
 
-                await using var context = await _factory.CreateAsync();
 
                 var query = context.Set<Cuerpo>().AsNoTracking().AsQueryable();
 

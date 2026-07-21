@@ -14,11 +14,10 @@ namespace API.UnidadEmpleo.Application.Evln
             public int Id { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper mapper) : IRequestHandler<Query, Result<Evaluacion>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper mapper) : IRequestHandler<Query, Result<Evaluacion>>
         {
             public async Task<Result<Evaluacion>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
                 var baseQuery = dbContext.Set<Evaluacion>().AsNoTracking().Where(x => x.Id == request.Id);
                 Evaluacion? queryData = await baseQuery.FirstOrDefaultAsync(cancellationToken);
                 if (queryData == null)
@@ -33,11 +32,11 @@ namespace API.UnidadEmpleo.Application.Evln
     {
         public class Query : IRequest<Result<List<Evaluacion>>> { }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<Evaluacion>>>
+        public class Handler(UnidadEmpleoDbContext dbContext) : IRequestHandler<Query, Result<List<Evaluacion>>>
         {
             public async Task<Result<List<Evaluacion>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
 
                 var entidades = await dbContext.Set<Evaluacion>()
                     .AsNoTracking()
@@ -55,11 +54,11 @@ namespace API.UnidadEmpleo.Application.Evln
             public int idsolicitud { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<Evaluacion>>>
+        public class Handler(UnidadEmpleoDbContext dbContext) : IRequestHandler<Query, Result<List<Evaluacion>>>
         {
             public async Task<Result<List<Evaluacion>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
 
                 var entidades = await dbContext.Set<Evaluacion>()
                     .Where(x => x.IdSoliciud == request.idsolicitud)

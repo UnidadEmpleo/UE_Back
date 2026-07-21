@@ -16,6 +16,7 @@ namespace API.Seguridad.Domain.Seguridad
         public string? UserName { get; set; }
         public string? Password { get; set; }
         public string? Port { get; set; }
+        public Boolean TrustServerCertificate { get; set; }
 
         public string? ConnectionString
         {
@@ -31,7 +32,7 @@ namespace API.Seguridad.Domain.Seguridad
 
                 if (!string.IsNullOrEmpty(UserName) && !string.IsNullOrEmpty(Password))
                 {
-                    connectionString += $"User Id={UserName};Password={Password};";
+                    connectionString += $"User Id={UserName};Password={Password};TrustServerCertificate={TrustServerCertificate};";
                 }
                 else
                 {

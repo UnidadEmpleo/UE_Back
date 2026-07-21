@@ -15,11 +15,11 @@ namespace API.Common.App.Rgn
             public int Id { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper mapper) : IRequestHandler<Query, Result<Region>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper mapper) : IRequestHandler<Query, Result<Region>>
         {
             public async Task<Result<Region>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
                 var baseQuery = dbContext.Set<Region>().AsNoTracking()
                             .Where(x => x.Id == request.Id);
                 Region? item = await baseQuery.FirstOrDefaultAsync(cancellationToken);
@@ -36,11 +36,11 @@ namespace API.Common.App.Rgn
     {
         public class Query : IRequest<Result<List<Region>>> { }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory) : IRequestHandler<Query, Result<List<Region>>>
+        public class Handler(UnidadEmpleoDbContext dbContext) : IRequestHandler<Query, Result<List<Region>>>
         {
             public async Task<Result<List<Region>>> Handle(Query request, CancellationToken cancellationToken)
             {
-                await using var dbContext = await _factory.CreateAsync();
+                //await using var dbContext = await _factory.CreateAsync();
 
                 var entidades = await dbContext.Set<Region>().AsNoTracking().ToListAsync(cancellationToken);
 

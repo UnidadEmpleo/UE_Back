@@ -4,6 +4,7 @@ using API.Seguridad.Application.Core;
 using API.UnidadEmpleo.Domain;
 using API.UnidadEmpleo.Persistence;
 using AutoMapper;
+using iText.Commons.Actions.Contexts;
 using MediatR;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
@@ -57,7 +58,7 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
             
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger,
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper _mapper, ILogger<Handler> _logger,
             IHttpContextAccessor http, IMediator mediator) : IRequestHandler<Command, Result<int>>
         {
             public async Task<Result<int>> Handle(Command request, CancellationToken cancellationToken)
@@ -65,37 +66,24 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
                 if (request == null)
                     return Result<int>.Failure("Los datos del ASPIRANTE no pueden ser nulos.", 400);
 
-                await using var dbContext = await _factory.CreateAsync();
-
                 var conn = dbContext.Database.GetDbConnection().ConnectionString;
                 
-                // Inicia la transacción
-                await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
                 try
                 {
                     var entidad = _mapper.Map<Aspirante>(request);
                     entidad.FechaCaptura = new DateTime();
 
-                    dbContext.Set<Aspirante>().Add(entidad);
+                    dbContext.Aspirante.Add(entidad);
 
                     var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
 
                     if (!result)
-                    {
-                        await transaction.RollbackAsync(cancellationToken);
                         return Result<int>.Failure("Error al crear al ASPIRANTE", 400);
-                    }
-
-                    await transaction.CommitAsync(cancellationToken);
-
-                    //conn = dbContext.Database.GetDbConnection().ConnectionString;
-                    //Console.WriteLine(conn);
-
+                    
                     return Result<int>.Success(1);
                 }
                 catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
                 {
-                    await transaction.RollbackAsync(cancellationToken);
                     _logger.LogError(ex, "Error de base de datos al crear al Aspirante");
                     string mensaje = "";
                     int codigo = 500;
@@ -156,7 +144,7 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
             public int IdRegionCaptura { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
@@ -166,44 +154,44 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
                 if (request.Curp != request.CurpRequest)
                     return Result<Unit>.Failure("El curp no coincide con los datos del contenido.", 400);
 
-                await using var context = await _factory.CreateAsync();
-
-                await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-
                 try
                 {
-                    var ente = await context.Set<Aspirante>().FindAsync([request.Curp], cancellationToken);
+                    var strategy = dbContext.Database.CreateExecutionStrategy();
 
-                    if (ente == null)
+                    await strategy.ExecuteAsync(async () =>
                     {
-                        await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("No se encontró al Aspirante", 404);
-                    }
+                        await using var transaction = await dbContext.Database.BeginTransactionAsync();
 
-                    if (!Utils.ComparaCambiosAspirante(request, ente))
-                    {
-                        await transaction.RollbackAsync(cancellationToken);
+                        var ente = await dbContext.Set<Aspirante>().FindAsync([request.Curp], cancellationToken);
+
+                        if (ente == null)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("No se encontró al Aspirante", 404);
+                        }
+
+                        if (!Utils.ComparaCambiosAspirante(request, ente))
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Success(Unit.Value);
+                        }
+
+                        _mapper.Map(request, ente);
+
+                        var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
+
+                        if (!result)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("Error al actualizar al ASPIRANTE", 400);
+                        }
+
+                        await transaction.CommitAsync(cancellationToken);
                         return Result<Unit>.Success(Unit.Value);
-                    }
-
-
-                    //ente.FechaUltimaActualizacion = DateTime.UtcNow;
-                    _mapper.Map(request, ente);
-
-                    var result = await context.SaveChangesAsync(cancellationToken) > 0;
-
-                    if (!result)
-                    {
-                        await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("Error al actualizar al ASPIRANTE", 400);
-                    }
-
-                    await transaction.CommitAsync(cancellationToken);
-                    return Result<Unit>.Success(Unit.Value);
+                    });
                 }
                 catch (DbUpdateException ex) when (ex.InnerException is SqlException sqlEx)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
+                {                    
                     _logger.LogError(ex, "Error de base de datos al crear al Aspirante");
                     string mensaje = "";
                     int codigo = 500;
@@ -227,14 +215,15 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
                             break;
 
                         default:
-                            mensaje = "Error de SQL Server no controlado. Código: {"+sqlEx.Number+"}";
+                            mensaje = "Error de SQL Server no controlado. Código: {" + sqlEx.Number + "}";
                             break;
 
                     }
-
                     return Result<Unit>.Failure(mensaje, codigo);
                 }
+                return Result<Unit>.Success(Unit.Value);
             }
+            
         }
     }
 
@@ -245,11 +234,11 @@ namespace API.UnidadEmpleo.Application.AspiranteApp
             public string Curp { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext context, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
-                await using var context = await _factory.CreateAsync();
+                //await using var context = await _factory.CreateAsync();
                 try
                 {
                     var entidad = await context.Set<Aspirante>().FirstOrDefaultAsync(x => x.Curp == request.Curp, cancellationToken);

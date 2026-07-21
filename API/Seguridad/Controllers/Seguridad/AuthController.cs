@@ -354,5 +354,6 @@ namespace API.Seguridad.Controllers.Seguridad
 
             return NoContent();
         }
+    
     }
 }

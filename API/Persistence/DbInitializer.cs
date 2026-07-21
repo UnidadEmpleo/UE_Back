@@ -393,10 +393,6 @@ namespace API.Persistence
                 };
                 await context.Usuarios.AddAsync(usuarioGerente);
 
-                
-
-                //adminUEGrupoId,subdireccionGrupoId,gerenciaGrupoId,atencionRegistroGrupoId,psicologoGrupoId,antidopingGrupoId,capturistaGrupoId
-
                 var psicologoUser = await userManager.FindByNameAsync("psicologo");
                 var usuaripsicologo = new Usuario
                 {
@@ -596,22 +592,6 @@ namespace API.Persistence
 
                 var basesDatos = new List<BaseDatos>
                 {
-                    new BaseDatos
-                    {
-                        Id = 1,
-                        Nombre = "BaseDatosAdministrativa",
-                        Descripcion = "Base de datos para el sistema administrativo",
-                        DatabaseName = "BaseDatosAdministrativa",
-                        ServerName = serverName,
-                    },
-                    new BaseDatos
-                    {
-                        Id = 2,
-                        Nombre = "BaseDatosClinica",
-                        Descripcion = "Base de datos para el sistema clínico",
-                        DatabaseName = "Clinica",
-                        ServerName = serverName,
-                    },
                     new BaseDatos
                     {
                         Id = 3,
@@ -928,7 +908,7 @@ namespace API.Persistence
                        ProcesoPadreId = uniEmp.Id,
                        FechaCreacion = DateTime.UtcNow,
                        FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Agregar\":false,\"Editar\":true,\"Borrar\":false,\"Evaluar\":false}]",
+                       Acciones = "[{\"Agregar\":false,\"Editar\":false,\"Borrar\":false,\"ReportModalAdvanced\":false}]",
                        SistemaId = 3
                    },
                    new Proceso
@@ -941,7 +921,7 @@ namespace API.Persistence
                        ProcesoPadreId = uniEmp.Id,
                        FechaCreacion = DateTime.UtcNow,
                        FechaUltimaActualizacion = DateTime.UtcNow,
-                       Acciones = "[{\"Editar\":true}]",
+                       Acciones = "[{\"Evaluar\":false,\"Editar\":true}]",
                        SistemaId = 3
                    },
                    new Proceso
@@ -957,7 +937,6 @@ namespace API.Persistence
                        Acciones = "[{\"Evaluar\":false,\"Quitar\":true,\"Finalizar\":false}]",
                        SistemaId = 3
                    },
-  
                };
 
 
@@ -983,7 +962,7 @@ namespace API.Persistence
                 var adminUeRole = await roleManager.FindByNameAsync("UeAdmin");
                 var roleProcesos = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal"
                 || p.Descr == "Gestion de Usuario" || p.Descr == "Usuarios" || p.Descr == "Unidad de Empleo" || p.Descr == "Aspirantes"
-                || p.Descr == "Solicitudes" || p.Descr == "Evaluaciones"
+                || p.Descr == "Solicitudes" 
                 ).Select(p => new RolProceso { RolId = adminUeRole.Id, ProcesoId = p.Id }).ToList();
                 await context.RolesProcesos.AddRangeAsync(roleProcesos);
 
@@ -1002,15 +981,15 @@ namespace API.Persistence
                 await context.RolesProcesos.AddRangeAsync(gerenteProceso);
 
                 var medicoRole = await roleManager.FindByNameAsync("Medico");
-                var medicoProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal" 
-                || p.Descr == "Unidad de Empleo" || p.Descr == "Solicitudes").Select(p =>
+                var medicoProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal").Select(p =>
                         new RolProceso { RolId = medicoRole.Id, ProcesoId = p.Id }
                 ).ToList();
                 await context.RolesProcesos.AddRangeAsync(medicoProceso);
 
                 var arRole = await roleManager.FindByNameAsync("AtencionRegistro");
-                var arProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal").Select(p => 
-                        new RolProceso { RolId = arRole.Id, ProcesoId = p.Id }
+                var arProceso = allProcesos.Where(p => p.Descr == "Evaluaciones" || p.Descr == "Personal"
+                || p.Descr == "Unidad de Empleo" || p.Descr == "Aspirantes" || p.Descr == "Solicitudes"
+                ).Select(p => new RolProceso { RolId = arRole.Id, ProcesoId = p.Id }
                 ).ToList();
                 await context.RolesProcesos.AddRangeAsync(arProceso);
 
@@ -1029,8 +1008,7 @@ namespace API.Persistence
 
                 var captuRole = await roleManager.FindByNameAsync("Capturista");
                 var captuProceso = allProcesos.Where(p => p.Descr == "Unidad de Empleo" || p.Descr == "Aspirantes"
-                || p.Descr == "Solicitudes").Select(p =>
-                        new RolProceso { RolId = captuRole.Id, ProcesoId = p.Id }
+                || p.Descr == "Solicitudes").Select(p => new RolProceso { RolId = captuRole.Id, ProcesoId = p.Id }
                 ).ToList();
                 await context.RolesProcesos.AddRangeAsync(captuProceso);
 
@@ -1059,22 +1037,8 @@ namespace API.Persistence
                 }).ToList();
                 await context.Permisos.AddRangeAsync(permisos);
 
-
-                /*
-                var gerencia1 = new Permiso
-                {
-                    UsuarioId = usuarioGerenciaId,
-                    RolId = (await roleManager.FindByNameAsync("Gerencia")).Id,
-                    ProcesoId = rp.ProcesoId,
-                };
-                    */
-                    
-
-
                 await context.SaveChangesAsync();
             }
-
-            
 
         }
     }

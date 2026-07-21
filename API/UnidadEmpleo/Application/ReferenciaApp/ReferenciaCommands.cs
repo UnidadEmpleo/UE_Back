@@ -3,6 +3,7 @@ using API.UnidadEmpleo.Domain;
 using API.UnidadEmpleo.Persistence;
 using AutoMapper;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace API.UnidadEmpleo.Application.ReferenciaApp
@@ -35,7 +36,7 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
             public string TipoAsentamiento { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger,
+        public class Handler(UnidadEmpleoDbContext dbContext, IMapper _mapper, ILogger<Handler> _logger,
             IHttpContextAccessor http, IMediator mediator) : IRequestHandler<Command, Result<int>>
         {
             public async Task<Result<int>> Handle(Command request, CancellationToken cancellationToken)
@@ -43,33 +44,22 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
                 if (request == null)
                     return Result<int>.Failure("Los datos de la REFERENCIA no pueden ser nulos.", 400);
 
-                await using var dbContext = await _factory.CreateAsync();
-
-                await using var transaction = await dbContext.Database.BeginTransactionAsync(cancellationToken);
-                try
-                {
+                try { 
                     dbContext.Set<Referencia>();
-                    //foreach (Command c in request)
-                    //{
-                        var entidad = _mapper.Map<Referencia>(request);
+                    
+                    var entidad = _mapper.Map<Referencia>(request);
                         dbContext.Add(entidad);
-                    //}
-
+                
                     var result = await dbContext.SaveChangesAsync(cancellationToken) > 0;
 
-                    if (!result)
-                    {
-                        await transaction.RollbackAsync(cancellationToken);
+                    if (!result)                    
                         return Result<int>.Failure("Error al crear la REFERENCIA", 400);
-                    }
-
-                    await transaction.CommitAsync(cancellationToken);
+                    
 
                     return Result<int>.Success(entidad.Id);
                 }
                 catch (Exception ex)
                 {
-                    await transaction.RollbackAsync(cancellationToken);
                     _logger.LogError(ex, "Error de base de datos al crear la Referencia");
                     return Result<int>.Failure($"Error de base de datos al crear la Referencia:", 500);
                 }
@@ -108,7 +98,7 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
 
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext context, IMapper _mapper, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
             {
@@ -118,40 +108,43 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
                 if (request.Id != request.IdRequest)
                     return Result<Unit>.Failure("El identificador no coincide con el contenido.", 400);
 
-                await using var context = await _factory.CreateAsync();
 
-                await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
-
+                var strategy = context.Database.CreateExecutionStrategy();
                 try
                 {
-                    var ente = await context.Set<Referencia>().FindAsync([request.Id], cancellationToken);
 
-                    if (ente == null)
+                    await strategy.ExecuteAsync(async () =>
                     {
-                        await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("No se encontró la Referencia", 404);
-                    }
+                        await using var transaction =
+                            await context.Database.BeginTransactionAsync();
 
-                    //ente.FechaUltimaActualizacion = DateTime.UtcNow;
-                    _mapper.Map(request, ente);
+                        var ente = await context.Set<Referencia>().FindAsync([request.Id], cancellationToken);
 
-                    var result = await context.SaveChangesAsync(cancellationToken) > 0;
+                        if (ente == null)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("No se encontró la Referencia", 404);
+                        }
 
-                    if (!result)
-                    {
-                        await transaction.RollbackAsync(cancellationToken);
-                        return Result<Unit>.Failure("Error al actualizar la Referencia", 400);
-                    }
+                        _mapper.Map(request, ente);
 
-                    await transaction.CommitAsync(cancellationToken);
-                    return Result<Unit>.Success(Unit.Value);
-                }
-                catch (Exception ex)
-                {
-                    await transaction.RollbackAsync(cancellationToken);
+                        var result = await context.SaveChangesAsync(cancellationToken) > 0;
+
+                        if (!result)
+                        {
+                            await transaction.RollbackAsync(cancellationToken);
+                            return Result<Unit>.Failure("Error al actualizar la Referencia", 400);
+                        }
+
+                        await transaction.CommitAsync(cancellationToken);
+                        return Result<Unit>.Success(Unit.Value);
+                    });
+                }catch (Exception ex){                    
                     _logger.LogError(ex, "Error de base de datos al actualizar la Referencia: {Id:}", request.Id);
                     return Result<Unit>.Failure($"Error de base de datos al actualizar la Referencia: {request.Id}", 500);
                 }
+
+                return Result<Unit>.Success(Unit.Value);
             }
         }
     }
@@ -163,11 +156,10 @@ namespace API.UnidadEmpleo.Application.ReferenciaApp
             public int Id { get; set; }
         }
 
-        public class Handler(UnidadEmpleoDBContextFactoryInterface _factory, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
+        public class Handler(UnidadEmpleoDbContext context, ILogger<Handler> _logger) : IRequestHandler<Command, Result<Unit>>
         {
             public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
-            {
-                await using var context = await _factory.CreateAsync();
+            {                
                 try
                 {
                     var entidad = await context.Set<Referencia>().FindAsync([request.Id], cancellationToken); //.FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken);

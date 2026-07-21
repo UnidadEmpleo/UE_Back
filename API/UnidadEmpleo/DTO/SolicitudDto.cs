@@ -74,6 +74,13 @@ namespace API.UnidadEmpleo.DTO
         public int nocurpActualizado { get; set; }
         public int noine { get; set; }
         public int norfcHomoclave { get; set; }
+
+        
+        
+
+
+
+
         /*
         public List<Referencia> Referencias { get; set; }
         public List<Evaluacion> Evaluaciones { get; set; }

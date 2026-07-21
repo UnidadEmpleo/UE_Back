@@ -6,6 +6,7 @@ using API.Seguridad.DTOs.Seguridad;
 using AutoMapper;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
@@ -477,5 +478,52 @@ namespace API.Seguridad.Application.Seguridad.Usuarios.Commands
                 return Result<Unit>.Success(Unit.Value);
             }
         }
+    }
+
+    public class ChangePswUser
+    {
+        public class Command : IRequest<Result<Unit>>
+        {
+            public string Username { get; set; }
+            public string Password { get; set; }
+            public string Psw1 { get; set; }
+            public string Psw2 { get; set; }
+        }
+
+        public class Handler(IGraphManager graphManager,
+            AppDbContext context,
+            UserManager<AppUserIdentity> userManager,
+            SignInManager<AppUserIdentity> signInManager,
+            IMapper mapper,
+            IConfiguration configuration,
+            ILogger<Handler> logger) : IRequestHandler<Command, Result<Unit>>
+        {
+            public async Task<Result<Unit>> Handle(Command request, CancellationToken cancellationToken)
+            {
+
+                var user = await userManager.FindByNameAsync(request.Username);
+                if (user == null) return Result<Unit>.Failure("Usuario no encontrado",403);
+
+                var validPsw = await signInManager.CheckPasswordSignInAsync(user, request.Password, false);
+                if (!validPsw.Succeeded) return Result<Unit>.Failure("Contraseña no valida ", 403);
+
+                if (!request.Psw1.Equals(request.Psw2))
+                    return Result<Unit>.Failure("Contraseña nueva no coincide", 403);
+
+                var result = await userManager.ChangePasswordAsync(
+                                user, request.Password, request.Psw1);
+
+                if (!result.Succeeded)
+                
+                        // Se retornan los errores específicos de Identity:
+                        // password incorrecto, password débil, password repetido, etc.
+                        return Result<Unit>.Failure("Contraseña no cumple los requisitos mínimos", 400);
+                
+                logger.LogInformation("El usuario {UserId} cambió su contraseña exitosamente.",user.Id);
+
+                return Result<Unit>.Success(Unit.Value);
+            }
+        }
+
     }
 }

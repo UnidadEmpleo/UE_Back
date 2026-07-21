@@ -22,6 +22,7 @@ namespace API.Seguridad.Application.Seguridad.Procesos.Commands
             public List<int> SubProcesoIds { get; set; } = []; // IDs de subprocesos existentes
             public short SistemaId { get; set; }
             public string? Ruta { get; set; }
+            public string? Acciones { get; set; }
         }
 
         public class Handler(AppDbContext context, IMapper mapper) : IRequestHandler<Command, Result<int>>
@@ -136,7 +137,8 @@ namespace API.Seguridad.Application.Seguridad.Procesos.Commands
             public string? Ruta { get; set; }
             public int? ProcesoPadreId { get; set; } // ID del proceso padre (si es un subproceso)
             public short SistemaId { get; set; }
-            public List<int> SubProcesoIds { get; set; } = []; // IDs de subprocesos existentes
+            public List<int> SubProcesoIds { get; set; } = []; // IDs de subprocesos existentes            
+            public string? Acciones { get; set; }
         }
 
         public class Handler(AppDbContext context, IMapper mapper) : IRequestHandler<Command, Result<Unit>>
@@ -148,8 +150,6 @@ namespace API.Seguridad.Application.Seguridad.Procesos.Commands
                 {
                     return Result<Unit>.Failure($"El proceso {request.Descr} no debe contener subprocesos", 400);
                 }
-
-                
 
                 var proceso = await context
                     .Procesos
@@ -199,7 +199,7 @@ namespace API.Seguridad.Application.Seguridad.Procesos.Commands
                     // Si no se proporcionan IDs, limpiar la colección de subprocesos
                     proceso.Subprocesos.Clear();
                 }
-
+                
                 //context.Update(proceso);
                 var result = await context.SaveChangesAsync(cancellationToken) > 0;
 
