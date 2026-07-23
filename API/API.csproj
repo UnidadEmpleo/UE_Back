@@ -80,5 +80,11 @@
     <Folder Include="Persistence\Migrations\" />
   </ItemGroup>
 
+   <ItemGroup>
+     <Content Include="Resources\**\*">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+     </Content>
+   </ItemGroup>
 
 </Project>
