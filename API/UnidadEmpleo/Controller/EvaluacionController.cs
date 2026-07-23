@@ -45,17 +45,6 @@ namespace API.UnidadEmpleo.Controller
                 return Unauthorized("Firma Usuario y/o contraseña no validos");
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
-            if (!result.Succeeded){
-                _logger.LogError(null, $"Tratao de crear una evaluación {loginDto.Username}, fallo su firma de autenticación");
-                return Unauthorized("Usuario o contraseña no validos ");
-            }
-
-            var resultUser = await Mediator.Send(new EvaluacionValidaUsuario.Query { Id = user.Id });
-
-            if (!resultUser.IsSuccess)
-                return HandleResult(resultUser);
-            
             command.UsuarioIngreso = user.Id;
 
             return HandleResult(await Mediator.Send(command));
@@ -65,28 +54,30 @@ namespace API.UnidadEmpleo.Controller
         public async Task<IActionResult> UpdateTermino(int id, EvaluacionUpdate.Command command)
         {
 
-            LoginDto loginDto = new LoginDto { Username = command.Username, Password = command.Password };
-
             //FALTA VALIDAR QUE SOLO SEAN LOS PERFILES Y DE ACUERDO A SU TIPO PARA CREAR EL USUARIO
-            var user = await _userManager.FindByNameAsync(loginDto.Username);
+            var user = await _userManager.FindByNameAsync(command.Username);
             if (user == null)
             {
-                _logger.LogError(null, $"Tratao de crear una evaluación {loginDto.Username}, fallo el identificador de autenticación");
+                _logger.LogError(null, $"Tratao de crear una evaluación {command.Username}, fallo el identificador de autenticación");
                 return Unauthorized("Firma Usuario y/o contraseña no validos");
             }
 
-            var result = await _signInManager.CheckPasswordSignInAsync(user, loginDto.Password, false);
-            if (!result.Succeeded)
+            // Password es diferente de "confirmar" la actualización es para confirmar el Resultado del evaluador: SÍ requiere uso de contraseña.
+            if (!command.Password.Equals("confirmar") && (command.Password != null || !command.Password.Equals("") ))
             {
-                _logger.LogError(null, $"Tratao de crear una evaluación {loginDto.Username}, fallo su firma de autenticación");
-                return Unauthorized("Usuario o contraseña no validos ");
+                var result = await _signInManager.CheckPasswordSignInAsync(user, command.Password, false);
+                if (!result.Succeeded)
+                {
+                    _logger.LogError(null, $"Tratao de crear una evaluación {command.Password}, fallo su firma de autenticación");
+                    return Unauthorized("Usuario o contraseña no validos ");
+                }
+
+                var resultUser = await Mediator.Send(new EvaluacionValidaUsuario.Query { Id = user.Id });
+
+                if (!resultUser.IsSuccess)
+                    return HandleResult(resultUser);
             }
-
-            var resultUser = await Mediator.Send(new EvaluacionValidaUsuario.Query { Id = user.Id });
-
-            if (!resultUser.IsSuccess)
-                return HandleResult(resultUser);
-
+            
             command.Salida = DateTime.Now;
             command.UsuarioSalida = user.Id;
 
